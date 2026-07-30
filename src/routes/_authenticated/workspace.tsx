@@ -5,23 +5,9 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useLang } from "@/lib/i18n";
 import { useMemo, useRef } from "react";
+// Note: local NoteItem/GoalItem/uid/useLocalList were kept during refactor but are unused now; safe to remove if TS flags unused
+
 import { Tabs } from "./tabs";
-
-type NoteItem = { id: string; title: string; body: string; created_at: string; updated_at: string };
- type GoalItem = { id: string; title: string; date?: string | null; priority: 'low'|'medium'|'high'; progress: number };
-
-function uid() { return Math.random().toString(36).slice(2); }
-
-function useLocalList<T>(key: string, initial: T[]) {
-  const [list, setList] = useState<T[]>(() => {
-    try {
-      const raw = localStorage.getItem(key);
-      return raw ? (JSON.parse(raw) as T[]) : initial;
-    } catch { return initial; }
-  });
-  useEffect(() => { try { localStorage.setItem(key, JSON.stringify(list)); } catch {} }, [key, list]);
-  return [list, setList] as const;
-}
 
 export const Route = createFileRoute("/_authenticated/workspace")({
   head: () => ({
