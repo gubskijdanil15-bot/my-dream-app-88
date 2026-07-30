@@ -1,15 +1,9 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "package.json", "use": "@vercel/static-build", "config": { "distDir": "dist" } }
-  ],
   "framework": null,
+  "buildCommand": "npm run build",
   "env": {
     "VITE_SUPABASE_URL": "${{ VITE_SUPABASE_URL }}",
     "VITE_SUPABASE_PUBLISHABLE_KEY": "${{ VITE_SUPABASE_PUBLISHABLE_KEY }}"
-  },
-  "routes": [
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
-  ]
+  }
 }
