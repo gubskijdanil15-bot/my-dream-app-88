@@ -117,24 +117,48 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
 
-  // Handle Supabase OAuth redirects (PKCE only)
+  // Handle Supabase OAuth redirects (implicit hash or PKCE code)
   useEffect(() => {
     const url = new URL(window.location.href);
-    const code = url.searchParams.get('code');
-    if (!code) return;
+
+    // Check for implicit flow (tokens in URL hash)
+    const hash = window.location.hash?.startsWith('#')
+      ? new URLSearchParams(window.location.hash.slice(1))
+      : null;
+    const access_token = hash?.get('access_token') || undefined;
+    const refresh_token = hash?.get('refresh_token') || undefined;
+
+    // Check for PKCE code flow (?code=...)
+    const code = url.searchParams.get('code') || undefined;
+
+    if (!access_token && !code) return;
 
     (async () => {
       try {
-        await supabase.auth.exchangeCodeForSession(code);
-        // Clean query params
-        url.searchParams.delete('code');
-        url.searchParams.delete('state');
-        const qs = url.searchParams.toString();
-        window.history.replaceState({}, document.title, url.pathname + (qs ? `?${qs}` : ''));
-        // Ensure session is loaded before invalidating UI
-        await supabase.auth.getSession();
-        router.invalidate();
-        queryClient.invalidateQueries();
+        let didUpdate = false;
+        if (access_token) {
+          // Store session immediately from hash tokens
+          await supabase.auth.setSession({ access_token, refresh_token });
+          // Clear the hash (keep search params intact)
+          window.history.replaceState({}, document.title, url.pathname + url.search);
+          didUpdate = true;
+        } else if (code) {
+          // Exchange PKCE code for a session
+          await supabase.auth.exchangeCodeForSession(code);
+          // Clean query params
+          url.searchParams.delete('code');
+          url.searchParams.delete('state');
+          const qs = url.searchParams.toString();
+          window.history.replaceState({}, document.title, url.pathname + (qs ? `?${qs}` : ''));
+          didUpdate = true;
+        }
+
+        if (didUpdate) {
+          // Ensure session is available before re-render
+          await supabase.auth.getSession();
+          router.invalidate();
+          queryClient.invalidateQueries();
+        }
       } catch (e) {
         console.error('OAuth callback handling failed', e);
       }
