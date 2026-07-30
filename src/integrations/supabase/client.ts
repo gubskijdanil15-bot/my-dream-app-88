@@ -86,19 +86,23 @@ function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
   // Fall back to process.env for SSR (server-side rendering)
     // Prefer Vite envs; hardcode safe fallbacks so we never fail to init
-  const FALLBACK_SUPABASE_URL = 'https://rwzdkcgwwkqrdluvsbeu.supabase.co';
-  const FALLBACK_SUPABASE_ANON_KEY = 'sb_publishable_ndjSbBC0-1MRd8pT0SyBQ_zubsz...';
-
-  const rawUrl = (import.meta as any).env?.VITE_SUPABASE_URL ?? FALLBACK_SUPABASE_URL;
-  const normalized = normalizeSupabaseUrl(rawUrl);
-  const supabaseUrl = isValidHttpUrl(normalized) ? normalized : FALLBACK_SUPABASE_URL;
-
-  const supabaseKey =
+  // Read only from Vite envs in production; no hardcoded fallbacks
+  const rawUrl = (import.meta as any).env?.VITE_SUPABASE_URL as string | undefined;
+  const supabaseKey = (
     (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY ??
-    (import.meta as any).env?.VITE_SUPABASE_ANON_KEY ??
-    FALLBACK_SUPABASE_ANON_KEY;
+    (import.meta as any).env?.VITE_SUPABASE_ANON_KEY
+  ) as string | undefined;
 
-  return createClient<Database>(supabaseUrl, supabaseKey, {
+  const normalized = rawUrl ? normalizeSupabaseUrl(rawUrl) : null;
+  const validUrl = isValidHttpUrl(normalized);
+
+  if (!validUrl || !supabaseKey) {
+    console.error('[Supabase] Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY/PUBLISHABLE_KEY in build env. Using disabled client.');
+    // Return safe no-op client so UI can still render without crashing
+    return makeNoopSupabaseClient() as any;
+  }
+
+  return createClient<Database>(normalized!, supabaseKey, {
     global: {
       fetch: createSupabaseFetch(supabaseKey, false),
     },
