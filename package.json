@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "npm run build:server",
+    "build": "vite build",
     "build:client": "vite build --outDir public --emptyOutDir",
     "build:server": "vite build && nitro build",
     "build:dev": "vite build --mode development",

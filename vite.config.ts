@@ -23,5 +23,9 @@ export default defineConfig({
       "@tanstack/react-query",
       "@tanstack/react-start",
     ],
+  },
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true
   }
 });
