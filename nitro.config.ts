@@ -3,8 +3,8 @@ import { fileURLToPath } from 'node:url';
 
 export default defineNitroConfig({
   preset: 'vercel',
-  // Expose the built client as public assets
+  // Serve dist/ at the web root so dist/index.html and dist/assets/* are available at '/'
   publicAssets: [
-    { dir: 'dist', maxAge: 60 * 60 }
+    { dir: 'dist', baseURL: '/', maxAge: 60 * 60 }
   ]
 });
