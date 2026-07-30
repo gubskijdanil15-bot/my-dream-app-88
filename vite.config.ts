@@ -9,7 +9,6 @@ import { fileURLToPath } from 'node:url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  appType: 'custom',
   plugins: [
     TanStackRouterVite(),
     react(),
@@ -24,17 +23,5 @@ export default defineConfig({
       "@tanstack/react-query",
       "@tanstack/react-start",
     ],
-  },
-  build: {
-    outDir: 'public',
-    emptyOutDir: true,
-    rollupOptions: {
-      input: path.resolve(__dirname, 'src/client.tsx'),
-      output: {
-        entryFileNames: 'assets/[name].js',
-        chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash][extname]'
-      }
-    }
   }
 });
