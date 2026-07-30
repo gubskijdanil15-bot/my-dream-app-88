@@ -1,4 +1,4 @@
-import { defineNitroConfig } from 'nitro/config';
+﻿import { defineNitroConfig } from 'nitro/config';
 import { fileURLToPath } from 'node:url';
 
 export default defineNitroConfig({

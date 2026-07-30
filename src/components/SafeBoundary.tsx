@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 
 export function SafeBoundary({ name, fallback, children }: { name: string; fallback?: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -26,7 +26,7 @@ class ErrorBoundary extends React.Component<{ name: string; fallback?: React.Rea
       return this.props.fallback ?? (
         <div role="alert" className="m-4 rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
           <div className="font-semibold text-foreground">Section failed to load</div>
-          <div className="mt-1">Something in “{this.props.name}” crashed. The rest of the page is still available.</div>
+          <div className="mt-1">Something in вЂњ{this.props.name}вЂќ crashed. The rest of the page is still available.</div>
         </div>
       );
     }

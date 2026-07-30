@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+﻿import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { SafeBoundary } from "@/components/SafeBoundary";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -31,12 +31,12 @@ import {
 export const Route = createFileRoute("/_authenticated/workspace")({
   head: () => ({
     meta: [
-      { title: "Workspace — Paperweight" },
+      { title: "Workspace вЂ” Paperweight" },
       {
         name: "description",
         content: "Your notes, active goals and today's plan in a single quiet workspace.",
       },
-      { property: "og:title", content: "Workspace — Paperweight" },
+      { property: "og:title", content: "Workspace вЂ” Paperweight" },
       { property: "og:description", content: "Notes, goals and today's plan." },
     ],
   }),
@@ -239,7 +239,7 @@ function Workspace() {
               {joined.data?.map((j) => (
                 <option key={j.id} value={j.owner_id}>
                   {j.name ?? t("share.someone")}
-                  {j.permission === "read" ? ` · ${t("share.readOnly")}` : ""}
+                  {j.permission === "read" ? ` В· ${t("share.readOnly")}` : ""}
                 </option>
               ))}
             </select>
@@ -446,10 +446,10 @@ function Workspace() {
                               })
                             }
                             className="size-8 rounded-full border border-border font-mono text-xs hover:border-accent hover:text-accent"
-                            aria-label={`− ${goal.title}`}
+                            aria-label={`в€’ ${goal.title}`}
                             disabled={!canEdit}
                           >
-                            −
+                            в€’
                           </button>
                           <span className="w-10 text-right font-mono text-xs">
                             {goal.progress}%

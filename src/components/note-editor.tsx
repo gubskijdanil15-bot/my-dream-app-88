@@ -1,11 +1,11 @@
-import DOMPurify from "dompurify";
+﻿import DOMPurify from "dompurify";
 import { useEffect, useRef, useState } from "react";
 import { useLang } from "@/lib/i18n";
 import type { Note } from "@/lib/workspace-data";
 
 const SANITIZE_CONFIG = {
-  // Безпека: забороняємо застарілий <font>, залишаємо обмежений набір тегів.
-  // Дозволяємо лише безпечні inline-стилі для color/background-color/font-size, фільтруємо інше.
+  // Р‘РµР·РїРµРєР°: Р·Р°Р±РѕСЂРѕРЅСЏС”РјРѕ Р·Р°СЃС‚Р°СЂС–Р»РёР№ <font>, Р·Р°Р»РёС€Р°С”РјРѕ РѕР±РјРµР¶РµРЅРёР№ РЅР°Р±С–СЂ С‚РµРіС–РІ.
+  // Р”РѕР·РІРѕР»СЏС”РјРѕ Р»РёС€Рµ Р±РµР·РїРµС‡РЅС– inline-СЃС‚РёР»С– РґР»СЏ color/background-color/font-size, С„С–Р»СЊС‚СЂСѓС”РјРѕ С–РЅС€Рµ.
 
   ALLOWED_TAGS: [
     "b",
@@ -80,7 +80,7 @@ export function NoteEditor({ note, canEdit, saving, onSave, onDelete }: Props) {
   }
 
   function sanitizeInlineStyles(el: HTMLElement) {
-    // Дозволяємо лише color, background-color, font-size
+    // Р”РѕР·РІРѕР»СЏС”РјРѕ Р»РёС€Рµ color, background-color, font-size
     const walker = document.createTreeWalker(el, NodeFilter.SHOW_ELEMENT);
     // @ts-expect-error - Type narrow at runtime
     for (let node = walker.currentNode as HTMLElement | null; node; node = walker.nextNode() as HTMLElement | null) {
@@ -184,7 +184,7 @@ export function NoteEditor({ note, canEdit, saving, onSave, onDelete }: Props) {
           </button>
           <span className="mx-1 h-5 w-px bg-border" />
           <button className={btn} onClick={() => exec("fontSize", "2")} title={t("fmt.small")}>
-            A−
+            Aв€’
           </button>
           <button className={btn} onClick={() => exec("fontSize", "4")} title={t("fmt.normal")}>
             A
@@ -202,7 +202,7 @@ export function NoteEditor({ note, canEdit, saving, onSave, onDelete }: Props) {
             onClick={() => exec("insertUnorderedList")}
             title={t("fmt.bullets")}
           >
-            •
+            вЂў
           </button>
           <button className={btn} onClick={() => exec("insertOrderedList")} title={t("fmt.numbers")}>
             1.

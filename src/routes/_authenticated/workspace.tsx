@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+﻿import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -26,7 +26,7 @@ function useLocalList<T>(key: string, initial: T[]) {
 export const Route = createFileRoute("/_authenticated/workspace")({
   head: () => ({
     meta: [
-      { title: "Workspace — Paperweight" },
+      { title: "Workspace вЂ” Paperweight" },
       { name: "description", content: "Your notes and daily plan." },
     ],
   }),

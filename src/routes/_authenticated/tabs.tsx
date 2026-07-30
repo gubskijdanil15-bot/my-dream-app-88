@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { useLang } from '@/lib/i18n';
 
 export type NoteItem = { id: string; title: string; body: string; created_at: string; updated_at: string };
@@ -55,7 +55,7 @@ export function NotesTab() {
           onInput={() => {
             if (saveDebounce.current) clearTimeout(saveDebounce.current);
             saveDebounce.current = setTimeout(() => {
-              // No autosave to backend — only UI responsiveness guard
+              // No autosave to backend вЂ” only UI responsiveness guard
             }, 600);
           }}
         />
