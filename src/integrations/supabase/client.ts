@@ -85,30 +85,22 @@ function isValidHttpUrl(u?: string | null) {
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
   // Fall back to process.env for SSR (server-side rendering)
-  // TEMP: log what Vite provided at runtime in prod to debug env loading
-  console.log('Loaded Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-  const RAW_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const SUPABASE_PUBLISHABLE_KEY =
-    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    import.meta.env.VITE_SUPABASE_ANON_KEY ||
-    process.env.SUPABASE_PUBLISHABLE_KEY ||
-    process.env.SUPABASE_ANON_KEY;
+    // Prefer Vite envs; hardcode safe fallbacks so we never fail to init
+  const FALLBACK_SUPABASE_URL = 'https://rwzdkcgwwkqrdluvsbeu.supabase.co';
+  const FALLBACK_SUPABASE_ANON_KEY = 'sb_publishable_ndjSbBC0-1MRd8pT0SyBQ_zubsz...';
 
-  // If env missing, return a no-op client that won't crash the UI
-  const envMissing = !RAW_SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY;
-  const maybeUrl = RAW_SUPABASE_URL ? normalizeSupabaseUrl(RAW_SUPABASE_URL) : null;
-  const hasValidUrl = isValidHttpUrl(maybeUrl);
-  const disabled = envMissing || !hasValidUrl;
+  const rawUrl = (import.meta as any).env?.VITE_SUPABASE_URL ?? FALLBACK_SUPABASE_URL;
+  const normalized = normalizeSupabaseUrl(rawUrl);
+  const supabaseUrl = isValidHttpUrl(normalized) ? normalized : FALLBACK_SUPABASE_URL;
 
-  if (disabled) {
-    console.warn('[Supabase] Missing or invalid URL/key. Using no-op Supabase client.');
-    // Fully avoid calling createClient when disabled
-    return makeNoopSupabaseClient() as any;
-  }
+  const supabaseKey =
+    (import.meta as any).env?.VITE_SUPABASE_PUBLISHABLE_KEY ??
+    (import.meta as any).env?.VITE_SUPABASE_ANON_KEY ??
+    FALLBACK_SUPABASE_ANON_KEY;
 
-  return createClient<Database>(maybeUrl!, SUPABASE_PUBLISHABLE_KEY!, {
+  return createClient<Database>(supabaseUrl, supabaseKey, {
     global: {
-      fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY!),
+      fetch: createSupabaseFetch(supabaseKey, false),
     },
     auth: {
       storage: typeof window !== 'undefined' ? localStorage : undefined,
@@ -116,6 +108,7 @@ function createSupabaseClient() {
       autoRefreshToken: true,
     }
   });
+
 }
 
 let _supabase: ReturnType<typeof createSupabaseClient> | undefined;
