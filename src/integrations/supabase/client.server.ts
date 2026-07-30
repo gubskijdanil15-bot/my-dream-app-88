@@ -33,15 +33,22 @@ function createSupabaseAdminClient() {
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  const disabled = !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY;
+  const disabled = !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !(SUPABASE_URL?.startsWith('http://') || SUPABASE_URL?.startsWith('https://'));
 
   if (disabled) {
-    console.warn('[Supabase] Admin client disabled: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set.');
+    console.warn('[Supabase] Admin client disabled: missing or invalid SUPABASE_URL/KEY.');
+    // Do not call createClient at all in disabled mode; return a minimal mock
+    const ok = { data: null, error: null } as const;
+    const empty = Promise.resolve({ data: [] as any, error: null as any });
+    const from = (_: string) => ({ select: () => empty, insert: () => ok, update: () => ok, delete: () => ok, eq: () => ({ select: () => empty }) });
+    const rpc = async () => ({ data: null as any, error: new Error('Supabase admin disabled') });
+    const auth = { getClaims: async () => ({ data: { claims: null } as any, error: new Error('Supabase admin disabled') }) } as any;
+    return { from, rpc, auth } as any;
   }
 
-  return createClient<Database>(SUPABASE_URL || 'http://localhost-disabled', SUPABASE_SERVICE_ROLE_KEY || 'sb_service_disabled', {
+  return createClient<Database>(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!, {
     global: {
-      fetch: createSupabaseFetch(SUPABASE_SERVICE_ROLE_KEY || 'sb_service_disabled', disabled),
+      fetch: createSupabaseFetch(SUPABASE_SERVICE_ROLE_KEY!),
     },
     auth: {
       storage: undefined,

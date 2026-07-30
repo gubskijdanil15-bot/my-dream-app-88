@@ -41,6 +41,43 @@ function normalizeSupabaseUrl(url: string): string {
   return u;
 }
 
+function makeNoopSupabaseClient() {
+  const ok = { data: null, error: null } as const;
+  const empty = Promise.resolve({ data: [] as any, error: null as any });
+  const auth = {
+    getSession: async () => ({ data: { session: null }, error: null } as const),
+    getUser: async () => ({ data: { user: null }, error: null } as const),
+    signInWithPassword: async () => ({ data: { user: null, session: null } as any, error: new Error('Supabase disabled') }),
+    signUp: async () => ({ data: { user: null, session: null } as any, error: new Error('Supabase disabled') }),
+    signInWithOAuth: async () => ({ data: { url: undefined } as any, error: new Error('Supabase disabled') }),
+    signOut: async () => ok,
+    exchangeCodeForSession: async () => ok,
+    getSessionFromUrl: async () => ok,
+    updateUser: async () => ({ data: { user: null }, error: new Error('Supabase disabled') }),
+    onAuthStateChange: (_cb?: any) => ({ data: { subscription: { unsubscribe(){} } }, error: null } as any),
+    getClaims: async () => ({ data: { claims: null } as any, error: new Error('Supabase disabled') }),
+  } as any;
+  const from = (_table: string) => ({
+    select: () => empty,
+    insert: () => Promise.resolve({ data: null, error: new Error('Supabase disabled') }),
+    update: () => Promise.resolve({ data: null, error: new Error('Supabase disabled') }),
+    delete: () => Promise.resolve({ data: null, error: new Error('Supabase disabled') }),
+    eq: () => ({ select: () => empty, update: () => Promise.resolve({ data: null, error: new Error('Supabase disabled') }), delete: () => Promise.resolve({ data: null, error: new Error('Supabase disabled') }), order: () => empty, in: () => empty })
+  });
+  const rpc = async () => ({ data: null as any, error: new Error('Supabase disabled') });
+  return { auth, from, rpc } as any;
+}
+
+function isValidHttpUrl(u?: string | null) {
+  if (!u) return false;
+  try {
+    const url = new URL(u);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
   // Fall back to process.env for SSR (server-side rendering)
@@ -49,11 +86,19 @@ function createSupabaseClient() {
 
   // If env missing, return a no-op client that won't crash the UI
   const envMissing = !RAW_SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY;
-  const SUPABASE_URL = RAW_SUPABASE_URL ? normalizeSupabaseUrl(RAW_SUPABASE_URL) : 'http://localhost-disabled';
+  const maybeUrl = RAW_SUPABASE_URL ? normalizeSupabaseUrl(RAW_SUPABASE_URL) : null;
+  const hasValidUrl = isValidHttpUrl(maybeUrl);
+  const disabled = envMissing || !hasValidUrl;
 
-  const client = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_disabled', {
+  if (disabled) {
+    console.warn('[Supabase] Missing or invalid URL/key. Using no-op Supabase client.');
+    // Fully avoid calling createClient when disabled
+    return makeNoopSupabaseClient() as any;
+  }
+
+  return createClient<Database>(maybeUrl!, SUPABASE_PUBLISHABLE_KEY!, {
     global: {
-      fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_disabled', envMissing),
+      fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY!),
     },
     auth: {
       storage: typeof window !== 'undefined' ? localStorage : undefined,
@@ -61,12 +106,6 @@ function createSupabaseClient() {
       autoRefreshToken: true,
     }
   });
-
-  if (envMissing) {
-    console.warn('[Supabase] VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY not set. Running in disabled/no-op mode.');
-  }
-
-  return client;
 }
 
 let _supabase: ReturnType<typeof createSupabaseClient> | undefined;
