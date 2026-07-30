@@ -126,11 +126,13 @@ function RootComponent() {
 
     async function handleOAuthReturn() {
       try {
+        let didUpdate = false;
         if (hasHashSession) {
           // Implicit (hash) flow
           await supabase.auth.getSessionFromUrl({ storeSession: true });
           // Remove the hash fragment
           window.history.replaceState({}, document.title, url.pathname + url.search);
+          didUpdate = true;
         } else if (code) {
           // PKCE (code) flow
           await supabase.auth.exchangeCodeForSession(code);
@@ -139,17 +141,18 @@ function RootComponent() {
           url.searchParams.delete('state');
           const qs = url.searchParams.toString();
           window.history.replaceState({}, document.title, url.pathname + (qs ? `?${qs}` : ''));
+          didUpdate = true;
         }
+        // Only invalidate if we actually changed session or URL
+        if (didUpdate) router.invalidate();
       } catch (e) {
         console.error('OAuth callback handling failed', e);
-      } finally {
-        // Revalidate data/UI no matter what
-        router.invalidate();
       }
     }
 
     handleOAuthReturn();
   }, [router]);
+
 
   // Keep existing auth state listener
   useEffect(() => {

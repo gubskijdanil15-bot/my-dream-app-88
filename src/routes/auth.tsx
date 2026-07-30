@@ -9,7 +9,12 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   beforeLoad: async () => {
     const { data } = await supabase.auth.getUser();
-    if (data.user) throw redirect({ to: "/workspace" });
+    // Prevent thrashing: only redirect if already authenticated and not returning from OAuth params
+    if (data.user) {
+      const url = typeof window !== 'undefined' ? new URL(window.location.href) : undefined;
+      const returningFromOAuth = !!(url && (url.searchParams.get('code') || window.location.hash.includes('access_token')));
+      if (!returningFromOAuth) throw redirect({ to: "/workspace" });
+    }
   },
   head: () => ({
     meta: [
