@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { SafeBoundary } from "@/components/SafeBoundary";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -219,7 +220,7 @@ function Workspace() {
       </header>
 
       {/* Notes column */}
-      <section
+      <section data-notes-section
         className={`flex-col border-border bg-foreground/[0.01] md:flex md:w-[380px] md:border-r ${
           tab === "notes" ? "flex flex-1 overflow-hidden" : "hidden"
         }`}
