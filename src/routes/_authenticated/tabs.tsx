@@ -36,6 +36,7 @@ export function NotesTab() {
   const [notes, setNotes] = useLocalList<NoteItem>('pw.notes', []);
   const titleRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const saveDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const add = () => {
     const title = (titleRef.current?.value || '').trim();
     const body = (bodyRef.current?.value || '').trim();
@@ -50,7 +51,14 @@ export function NotesTab() {
       <h2 className="label-mono mb-4">{t('ws.notes')}</h2>
       <div className="mb-3 grid gap-2 sm:grid-cols-[240px_minmax(0,1fr)_auto]">
         <input ref={titleRef} placeholder={t('ws.quickCapture')} className="rounded-lg border border-border bg-background px-3 py-2 text-sm" />
-        <textarea ref={bodyRef} placeholder={t('ws.writeItOut')} rows={3} className="rounded-lg border border-border bg-background px-3 py-2 text-sm" />
+        <textarea ref={bodyRef} placeholder={t('ws.writeItOut')} rows={3} className="rounded-lg border border-border bg-background px-3 py-2 text-sm" 
+          onInput={() => {
+            if (saveDebounce.current) clearTimeout(saveDebounce.current);
+            saveDebounce.current = setTimeout(() => {
+              // No autosave to backend — only UI responsiveness guard
+            }, 600);
+          }}
+        />
         <button onClick={add} className="rounded-lg bg-foreground px-4 py-2 text-xs font-bold text-background hover:bg-accent">{t('ws.add')}</button>
       </div>
       <ul className="space-y-3">

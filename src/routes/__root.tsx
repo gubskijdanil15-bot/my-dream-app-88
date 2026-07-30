@@ -168,21 +168,11 @@ function RootComponent() {
   }, [router, queryClient]);
 
 
-  // Keep existing auth state listener
+  // Temporarily disable global auth-driven invalidations to rule out re-render storms while typing
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((event) => {
-      // Avoid global churn: only touch what’s needed
-      if (event === "SIGNED_IN") {
-        router.navigate({ to: "/workspace", replace: true });
-        queryClient.invalidateQueries();
-      } else if (event === "USER_UPDATED") {
-        queryClient.invalidateQueries({ stale: true });
-      } else if (event === "SIGNED_OUT") {
-        router.invalidate();
-      }
-    });
-    return () => data.subscription.unsubscribe();
-  }, [router, queryClient]);
+    const sub = supabase.auth.onAuthStateChange(() => { /* no-op */ });
+    return () => sub.data.subscription.unsubscribe();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
