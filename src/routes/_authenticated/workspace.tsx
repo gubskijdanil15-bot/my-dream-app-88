@@ -91,6 +91,12 @@ function Workspace() {
   const [tab, setTab] = useState<Tab>("plan");
 
   const [taskTitle, setTaskTitle] = useState("");
+  const taskTitleDebounce = useRef<number | null>(null);
+  const onTaskTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (taskTitleDebounce.current) window.clearTimeout(taskTitleDebounce.current);
+    taskTitleDebounce.current = window.setTimeout(() => setTaskTitle(value), 400);
+  };
   const [taskPriority, setTaskPriority] = useState<Task["priority"]>("medium");
   const [goalOpen, setGoalOpen] = useState(false);
   const [goalTitle, setGoalTitle] = useState("");
@@ -354,7 +360,11 @@ function Workspace() {
                 <input
                   id="goal-title"
                   value={goalTitle}
-                  onChange={(e) => setGoalTitle(e.target.value)}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    // Defer state update to next tick to avoid layout thrash while typing
+                    requestAnimationFrame(() => setGoalTitle(v));
+                  }}
                   maxLength={160}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-base focus:outline-none focus:ring-1 focus:ring-ring sm:text-sm"
                 />
@@ -478,7 +488,7 @@ function Workspace() {
                   <form onSubmit={submitTask} className="mb-4 flex flex-wrap gap-2">
                     <input
                       value={taskTitle}
-                      onChange={(e) => setTaskTitle(e.target.value)}
+                      onChange={onTaskTitleChange}
                       placeholder={t("ws.addTask")}
                       maxLength={200}
                       className="w-full min-w-0 flex-1 rounded-xl border border-border bg-card px-3 py-2.5 text-base placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring sm:w-auto sm:text-sm"
