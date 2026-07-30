@@ -4,6 +4,24 @@ import { useEffect, useState } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useLang } from "@/lib/i18n";
+import { useMemo, useRef } from "react";
+import { Tabs } from "./tabs";
+
+type NoteItem = { id: string; title: string; body: string; created_at: string; updated_at: string };
+ type GoalItem = { id: string; title: string; date?: string | null; priority: 'low'|'medium'|'high'; progress: number };
+
+function uid() { return Math.random().toString(36).slice(2); }
+
+function useLocalList<T>(key: string, initial: T[]) {
+  const [list, setList] = useState<T[]>(() => {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? (JSON.parse(raw) as T[]) : initial;
+    } catch { return initial; }
+  });
+  useEffect(() => { try { localStorage.setItem(key, JSON.stringify(list)); } catch {} }, [key, list]);
+  return [list, setList] as const;
+}
 
 export const Route = createFileRoute("/_authenticated/workspace")({
   head: () => ({
@@ -72,7 +90,7 @@ function WorkspacePlaceholder() {
         </div>
       </header>
 
-      {/* Main content — simple, non-crashing placeholder */}
+      {/* Main content with two tabs: Notes and Goals */}
       <main className="flex flex-1 flex-col overflow-y-auto">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border bg-background/80 px-4 py-4 sm:px-8 sm:py-6">
           <div className="min-w-0">
@@ -81,17 +99,7 @@ function WorkspacePlaceholder() {
           </div>
         </div>
 
-        <div className="mx-auto w-full max-w-3xl p-4 sm:p-8">
-          <section className="mb-8 rounded-2xl border border-border bg-card p-4 sm:p-6">
-            <h2 className="label-mono mb-2">{t("ws.notes")}</h2>
-            <p className="text-xs text-muted-foreground">This is a temporary safe placeholder. Your notes UI is disabled while we stabilize the page.</p>
-          </section>
-
-          <section className="rounded-2xl border border-border bg-card p-4 sm:p-6">
-            <h2 className="label-mono mb-2">{t("ws.todayList")}</h2>
-            <p className="text-xs text-muted-foreground">Daily plan UI is disabled temporarily. You can still switch theme/language or sign out.</p>
-          </section>
-        </div>
+        <Tabs />
       </main>
 
       {/* Bottom tabs (mobile) */}
