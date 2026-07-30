@@ -155,8 +155,10 @@ function RootComponent() {
 
         if (didUpdate) {
           // Ensure session is available before re-render
-          await supabase.auth.getSession();
-          router.invalidate();
+          const { data } = await supabase.auth.getSession();
+          if (data.session) {
+            router.navigate({ to: "/workspace", replace: true });
+          }
           queryClient.invalidateQueries();
         }
       } catch (e) {

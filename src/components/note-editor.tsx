@@ -102,9 +102,21 @@ export function NoteEditor({ note, canEdit, saving, onSave, onDelete }: Props) {
     }
   }
 
-  function save() {
-    if (bodyRef.current) sanitizeInlineStyles(bodyRef.current);
+  // Debounced saver to avoid heavy work on every keystroke
+  const saveDebounced = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function scheduleSave() {
+    if (!canEdit) return;
+    if (saveDebounced.current) clearTimeout(saveDebounced.current);
+    saveDebounced.current = setTimeout(() => {
+      if (bodyRef.current) sanitizeInlineStyles(bodyRef.current);
+      const html = sanitizeNote(bodyRef.current?.innerHTML ?? "");
+      const plain = (bodyRef.current?.innerText ?? "").slice(0, 8000);
+      onSave({ title: title.trim() || "Untitled", body_html: html, body: plain });
+    }, 500); // 500ms debounce
+  }
 
+  function saveNow() {
+    if (bodyRef.current) sanitizeInlineStyles(bodyRef.current);
     const html = sanitizeNote(bodyRef.current?.innerHTML ?? "");
     const plain = (bodyRef.current?.innerText ?? "").slice(0, 8000);
     onSave({ title: title.trim() || "Untitled", body_html: html, body: plain });
@@ -124,7 +136,7 @@ export function NoteEditor({ note, canEdit, saving, onSave, onDelete }: Props) {
         {canEdit && (
           <>
             <button
-              onClick={save}
+              onClick={saveNow}
               disabled={saving}
               className="text-xs font-semibold tracking-wide text-muted-foreground hover:text-accent disabled:opacity-50"
             >
@@ -241,6 +253,7 @@ export function NoteEditor({ note, canEdit, saving, onSave, onDelete }: Props) {
 
       <div
         ref={bodyRef}
+        onInput={scheduleSave}
         contentEditable={canEdit}
         suppressContentEditableWarning
         data-placeholder={t("ws.writeItOut")}
