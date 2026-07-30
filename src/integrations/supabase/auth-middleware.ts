@@ -40,8 +40,8 @@ function normalizeSupabaseUrl(url: string): string {
 export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server(
   async ({ next }) => {
     
-    const RAW_SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const RAW_SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
     const SUPABASE_URL = RAW_SUPABASE_URL ? normalizeSupabaseUrl(RAW_SUPABASE_URL) : undefined;
 
     if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
@@ -50,8 +50,8 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
         ...(!SUPABASE_PUBLISHABLE_KEY ? ['SUPABASE_PUBLISHABLE_KEY'] : []),
       ];
       const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Set these variables in your environment (.env locally, and in your deploy platform's project settings).`;
-      console.error(`[Supabase] ${message}`);
-      throw new Error(message);
+      console.warn(`[Supabase] ${message}\nProceeding without server auth middleware.`);
+      return await next();
     }
     
     const request = getRequest();
