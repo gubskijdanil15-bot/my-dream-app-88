@@ -34,6 +34,10 @@ function createSupabaseFetch(supabaseKey: string, disabled = false): typeof fetc
 function normalizeSupabaseUrl(url: string): string {
   // Strip trailing spaces
   let u = url.trim();
+  // Auto-prefix protocol if a Supabase host was provided without it
+  if (!/^https?:\/\//i.test(u) && /[\w.-]+\.supabase\.co$/i.test(u)) {
+    u = `https://${u}`;
+  }
   // Remove any trailing slashes
   u = u.replace(/\/?$/, '');
   // If someone accidentally saved the REST or AUTH subpaths in the env, strip them
