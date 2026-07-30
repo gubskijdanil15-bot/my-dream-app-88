@@ -7,7 +7,7 @@
     "dev": "vite dev",
     "build": "npm run build:client && npm run build:server",
     "build:client": "vite build",
-    "build:server": "nitro build",
+    "build:server": "npx tanstack start build --preset vercel",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .", 
