@@ -6,7 +6,7 @@ function isNewSupabaseApiKey(value: string): boolean {
   return value.startsWith('sb_publishable_') || value.startsWith('sb_secret_');
 }
 
-function createSupabaseFetch(supabaseKey: string): typeof fetch {
+function createSupabaseFetch(supabaseKey: string, disabled = false): typeof fetch {
   return (input, init) => {
     const headers = new Headers(
       typeof Request !== 'undefined' && input instanceof Request ? input.headers : undefined,
@@ -21,6 +21,10 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
       headers.delete('Authorization');
     }
 
+    if (disabled) {
+      // Return a benign empty 200 response in disabled mode to avoid runtime errors.
+      return Promise.resolve(new Response(null, { status: 200, statusText: 'OK' })) as any;
+    }
     headers.set('apikey', supabaseKey);
     return fetch(input, { ...init, headers });
   };
@@ -43,21 +47,13 @@ function createSupabaseClient() {
   const RAW_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
   const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
 
-  if (!RAW_SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
-    const missing = [
-      ...(!RAW_SUPABASE_URL ? ['SUPABASE_URL'] : []),
-      ...(!SUPABASE_PUBLISHABLE_KEY ? ['SUPABASE_PUBLISHABLE_KEY'] : []),
-    ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Set these variables in your environment (.env locally, and in your deploy platform's project settings).`;
-    console.error(`[Supabase] ${message}`);
-    throw new Error(message);
-  }
+  // If env missing, return a no-op client that won't crash the UI
+  const envMissing = !RAW_SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY;
+  const SUPABASE_URL = RAW_SUPABASE_URL ? normalizeSupabaseUrl(RAW_SUPABASE_URL) : 'http://localhost-disabled';
 
-  const SUPABASE_URL = normalizeSupabaseUrl(RAW_SUPABASE_URL);
-
-  return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  const client = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_disabled', {
     global: {
-      fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY),
+      fetch: createSupabaseFetch(SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_disabled', envMissing),
     },
     auth: {
       storage: typeof window !== 'undefined' ? localStorage : undefined,
@@ -65,6 +61,12 @@ function createSupabaseClient() {
       autoRefreshToken: true,
     }
   });
+
+  if (envMissing) {
+    console.warn('[Supabase] VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY not set. Running in disabled/no-op mode.');
+  }
+
+  return client;
 }
 
 let _supabase: ReturnType<typeof createSupabaseClient> | undefined;

@@ -33,19 +33,15 @@ function createSupabaseAdminClient() {
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    const missing = [
-      ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
-      ...(!SUPABASE_SERVICE_ROLE_KEY ? ['SUPABASE_SERVICE_ROLE_KEY'] : []),
-    ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Set these variables in your environment (.env locally, and in your deploy platform's project settings).`;
-    console.error(`[Supabase] ${message}`);
-    throw new Error(message);
+  const disabled = !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY;
+
+  if (disabled) {
+    console.warn('[Supabase] Admin client disabled: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set.');
   }
 
-  return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  return createClient<Database>(SUPABASE_URL || 'http://localhost-disabled', SUPABASE_SERVICE_ROLE_KEY || 'sb_service_disabled', {
     global: {
-      fetch: createSupabaseFetch(SUPABASE_SERVICE_ROLE_KEY),
+      fetch: createSupabaseFetch(SUPABASE_SERVICE_ROLE_KEY || 'sb_service_disabled', disabled),
     },
     auth: {
       storage: undefined,
