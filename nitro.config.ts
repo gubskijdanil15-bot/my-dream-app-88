@@ -2,6 +2,9 @@ import { defineNitroConfig } from 'nitro/config';
 import { fileURLToPath } from 'node:url';
 
 export default defineNitroConfig({
-  // Let TanStack Start control Nitro output (no explicit entry)
-  preset: 'vercel'
+  preset: 'vercel',
+  // Serve prebuilt client assets from ./public (emitted by vite build)
+  publicAssets: [
+    { dir: 'public', maxAge: 60 * 60 * 24 * 365 }
+  ]
 });

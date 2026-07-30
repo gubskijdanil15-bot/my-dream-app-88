@@ -6,8 +6,10 @@ import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 export default defineConfig({
-  // Standard TanStack Start setup — let the plugin drive server build
+  appType: 'custom',
   plugins: [
     TanStackRouterVite(),
     react(),
@@ -22,5 +24,17 @@ export default defineConfig({
       "@tanstack/react-query",
       "@tanstack/react-start",
     ],
+  },
+  build: {
+    outDir: 'public',
+    emptyOutDir: true,
+    rollupOptions: {
+      input: path.resolve(__dirname, 'src/client.tsx'),
+      output: {
+        entryFileNames: 'assets/[name].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash][extname]'
+      }
+    }
   }
 });

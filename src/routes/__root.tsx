@@ -107,6 +107,9 @@ function RootShell({ children }: { children: ReactNode }) {
       </head>
       <body>
         {children}
+        {/* Load the prebuilt client bundle for hydration */}
+        <script type="module" src="/assets/client.js"></script>
+        {/* Keep Scripts in case TanStack adds runtime scripts */}
         <Scripts />
       </body>
     </html>
