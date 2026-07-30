@@ -171,9 +171,15 @@ function RootComponent() {
   // Keep existing auth state listener
   useEffect(() => {
     const { data } = supabase.auth.onAuthStateChange((event) => {
-      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
-      router.invalidate();
-      if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
+      // Avoid global churn: only touch what’s needed
+      if (event === "SIGNED_IN") {
+        router.navigate({ to: "/workspace", replace: true });
+        queryClient.invalidateQueries();
+      } else if (event === "USER_UPDATED") {
+        queryClient.invalidateQueries({ stale: true });
+      } else if (event === "SIGNED_OUT") {
+        router.invalidate();
+      }
     });
     return () => data.subscription.unsubscribe();
   }, [router, queryClient]);
