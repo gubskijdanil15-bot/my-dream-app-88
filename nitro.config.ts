@@ -1,4 +1,5 @@
 import { defineNitroConfig } from 'nitro/config';
+import { fileURLToPath } from 'node:url';
 
 export default defineNitroConfig({
   // Target Vercel Build Output API v3
@@ -8,5 +9,9 @@ export default defineNitroConfig({
   // Serve Vite client assets generated into ./dist
   publicAssets: [
     { dir: 'dist', maxAge: 60 * 60 * 24 * 365 }
-  ]
+  ],
+  alias: {
+    // Ensure Nitro resolves these like Vite/TS
+    '@/': fileURLToPath(new URL('./src/', import.meta.url)),
+  }
 });
