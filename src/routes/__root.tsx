@@ -144,7 +144,12 @@ function RootComponent() {
           didUpdate = true;
         }
         // Only invalidate if we actually changed session or URL
-        if (didUpdate) router.invalidate();
+        if (didUpdate) {
+          // Ensure the session is now present in storage before invalidating UI
+          await supabase.auth.getSession();
+          router.invalidate();
+          queryClient.invalidateQueries();
+        }
       } catch (e) {
         console.error('OAuth callback handling failed', e);
       }
