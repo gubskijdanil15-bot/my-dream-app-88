@@ -117,46 +117,29 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
 
-  // Handle Supabase OAuth redirects (PKCE and implicit)
+  // Handle Supabase OAuth redirects (PKCE only)
   useEffect(() => {
-    // Runs only in the browser
     const url = new URL(window.location.href);
-    const hasHashSession = typeof window !== 'undefined' && window.location.hash.includes('access_token');
     const code = url.searchParams.get('code');
+    if (!code) return;
 
-    async function handleOAuthReturn() {
+    (async () => {
       try {
-        let didUpdate = false;
-        if (hasHashSession) {
-          // Implicit (hash) flow
-          await supabase.auth.getSessionFromUrl({ storeSession: true });
-          // Remove the hash fragment
-          window.history.replaceState({}, document.title, url.pathname + url.search);
-          didUpdate = true;
-        } else if (code) {
-          // PKCE (code) flow
-          await supabase.auth.exchangeCodeForSession(code);
-          // Clean query params
-          url.searchParams.delete('code');
-          url.searchParams.delete('state');
-          const qs = url.searchParams.toString();
-          window.history.replaceState({}, document.title, url.pathname + (qs ? `?${qs}` : ''));
-          didUpdate = true;
-        }
-        // Only invalidate if we actually changed session or URL
-        if (didUpdate) {
-          // Ensure the session is now present in storage before invalidating UI
-          await supabase.auth.getSession();
-          router.invalidate();
-          queryClient.invalidateQueries();
-        }
+        await supabase.auth.exchangeCodeForSession(code);
+        // Clean query params
+        url.searchParams.delete('code');
+        url.searchParams.delete('state');
+        const qs = url.searchParams.toString();
+        window.history.replaceState({}, document.title, url.pathname + (qs ? `?${qs}` : ''));
+        // Ensure session is loaded before invalidating UI
+        await supabase.auth.getSession();
+        router.invalidate();
+        queryClient.invalidateQueries();
       } catch (e) {
         console.error('OAuth callback handling failed', e);
       }
-    }
-
-    handleOAuthReturn();
-  }, [router]);
+    })();
+  }, [router, queryClient]);
 
 
   // Keep existing auth state listener
