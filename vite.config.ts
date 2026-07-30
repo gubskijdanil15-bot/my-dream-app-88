@@ -5,6 +5,8 @@ import tailwindcss from "@tailwindcss/vite";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 
 export default defineConfig({
+  // Tell Vite we handle HTML ourselves (SSR). Prevents index.html as entry.
+  appType: 'custom',
   plugins: [
     TanStackRouterVite({
       // Ensure TanStack Start uses our custom server entry wrapper
