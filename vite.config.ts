@@ -3,10 +3,10 @@ import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
 import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
-  // Tell Vite we handle HTML ourselves (SSR). Prevents index.html as entry.
-  appType: 'custom',
   plugins: [
     TanStackRouterVite({
       // Ensure TanStack Start uses our custom server entry wrapper
@@ -25,4 +25,10 @@ export default defineConfig({
       "@tanstack/react-start",
     ],
   },
+  build: {
+    rollupOptions: {
+      // Explicitly set HTML entry for client build
+      input: 'index.html'
+    }
+  }
 });
