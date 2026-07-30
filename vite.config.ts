@@ -7,11 +7,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
+  // Standard TanStack Start setup — let the plugin drive server build
   plugins: [
-    TanStackRouterVite({
-      // Ensure TanStack Start uses our custom server entry wrapper
-      start: { server: { entry: "server" } },
-    }),
+    TanStackRouterVite(),
     react(),
     tailwindcss(),
     tsconfigPaths(),
@@ -24,11 +22,5 @@ export default defineConfig({
       "@tanstack/react-query",
       "@tanstack/react-start",
     ],
-  },
-  build: {
-    rollupOptions: {
-      // Explicitly set HTML entry for client build
-      input: 'index.html'
-    }
   }
 });
