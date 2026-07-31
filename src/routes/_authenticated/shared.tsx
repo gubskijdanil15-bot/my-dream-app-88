@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { LanguageToggle } from "@/components/language-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
+
 import { useLang, type TranslationKey } from "@/lib/i18n";
 import {
   useActivity,
@@ -66,8 +68,12 @@ function SharedPage() {
         <Link to="/workspace" className="text-sm font-semibold text-muted-foreground hover:text-accent">
           ← {t("share.myNotebook")}
         </Link>
-        <LanguageToggle />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <LanguageToggle />
+        </div>
       </header>
+
 
       <main className="mx-auto max-w-3xl space-y-8 p-4 pb-20 sm:p-8">
         <div>

@@ -10,6 +10,8 @@ import {
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "sonner";
 import { LanguageProvider } from "../lib/i18n";
+import { ThemeProvider } from "../lib/theme";
+
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -135,11 +137,14 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <LanguageProvider>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
-        <Toaster position="bottom-right" />
-      </LanguageProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+          <Toaster position="bottom-right" />
+        </LanguageProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
+

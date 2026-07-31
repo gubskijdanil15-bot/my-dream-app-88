@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { RulerProgress } from "@/components/ruler-progress";
 import { LanguageToggle } from "@/components/language-toggle";
 import { NoteEditor } from "@/components/note-editor";
+import { ThemeToggle } from "@/components/theme-toggle";
+
 import { useLang } from "@/lib/i18n";
 import { useJoinedJournals } from "@/lib/journal-data";
 import {
@@ -178,6 +180,13 @@ function Workspace() {
           >
             {t("ws.tabShare")}
           </Link>
+          <Link
+            to="/profile"
+            className="text-center text-[11px] font-semibold leading-tight text-muted-foreground hover:text-accent"
+          >
+            {t("ws.tabProfile")}
+          </Link>
+          <ThemeToggle />
           <LanguageToggle className="scale-90" />
           <button
             onClick={handleSignOut}
@@ -186,6 +195,7 @@ function Workspace() {
             {t("ws.out")}
           </button>
         </div>
+
       </nav>
 
       {/* Mobile top bar */}
@@ -197,7 +207,9 @@ function Workspace() {
           <span className="truncate text-sm font-bold tracking-tight">Paperweight</span>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          <ThemeToggle />
           <LanguageToggle />
+
           <button
             onClick={handleSignOut}
             className="text-xs font-semibold text-muted-foreground"
@@ -307,6 +319,25 @@ function Workspace() {
             <p className="truncate font-mono text-xs text-muted-foreground sm:text-sm">
               {longDate(new Date())}
             </p>
+            {(joined.data?.length ?? 0) > 0 && (
+              <select
+                value={ownerId ?? ""}
+                onChange={(e) => {
+                  setOwnerId(e.target.value || null);
+                  setSelectedId(null);
+                }}
+                aria-label={t("ws.viewingNotebook")}
+                className="mt-2 max-w-full rounded-xl border border-border bg-card px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+              >
+                <option value="">{t("share.myNotebook")}</option>
+                {joined.data?.map((j) => (
+                  <option key={j.id} value={j.owner_id}>
+                    {j.name ?? t("share.someone")}
+                    {j.permission === "read" ? ` · ${t("share.readOnly")}` : ""}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
           {canEdit && (
             <button
@@ -322,6 +353,7 @@ function Workspace() {
             </span>
           )}
         </header>
+
 
         <div className="max-w-4xl p-4 pb-28 sm:p-8 md:pb-8">
           {goalOpen && (
@@ -558,7 +590,7 @@ function Workspace() {
       </main>
 
       {/* Mobile tab bar */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
         {(
           [
             ["notes", "ws.tabNotes"],
@@ -582,7 +614,14 @@ function Workspace() {
         >
           {t("ws.tabShare")}
         </Link>
+        <Link
+          to="/profile"
+          className="py-3.5 text-center text-xs font-semibold tracking-wide text-muted-foreground"
+        >
+          {t("ws.tabProfile")}
+        </Link>
       </nav>
+
 
     </div>
   );
