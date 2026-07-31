@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { LanguageToggle } from "@/components/language-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
+
 import { useLang } from "@/lib/i18n";
 
 export const Route = createFileRoute("/auth")({
@@ -83,7 +85,11 @@ function AuthPage() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-4 py-10">
-      <LanguageToggle />
+      <div className="flex items-center gap-2">
+        <ThemeToggle />
+        <LanguageToggle />
+      </div>
+
       <div className="animate-entry w-full max-w-[380px] rounded-2xl border border-border bg-paper p-6 shadow-sm sm:p-8">
         <div className="mx-auto mb-6 flex size-12 items-center justify-center rounded-md bg-foreground text-xl font-bold text-background">
           P
