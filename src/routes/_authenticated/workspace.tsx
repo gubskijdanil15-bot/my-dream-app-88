@@ -207,7 +207,9 @@ function Workspace() {
           <span className="truncate text-sm font-bold tracking-tight">Paperweight</span>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          <ThemeToggle />
           <LanguageToggle />
+
           <button
             onClick={handleSignOut}
             className="text-xs font-semibold text-muted-foreground"
