@@ -29,19 +29,14 @@ export type Task = {
 
 export const todayISO = () => new Date().toISOString().slice(0, 10);
 
-export async function currentUserId(): Promise<string | null> {
-  try {
-    const { data } = await supabase.auth.getUser();
-    return data?.user?.id ?? null;
-  } catch {
-    return null;
-  }
+export async function currentUserId() {
+  const { data } = await supabase.auth.getUser();
+  if (!data.user) throw new Error("Not signed in");
+  return data.user.id;
 }
 
 async function ownerOrSelf(ownerId?: string) {
-  const uid = ownerId ?? (await currentUserId());
-  if (!uid) throw Object.assign(new Error('Unauthenticated'), { code: 'UNAUTH' });
-  return uid;
+  return ownerId ?? (await currentUserId());
 }
 
 /* ---------------- notes ---------------- */
@@ -50,19 +45,14 @@ export function useNotes(ownerId?: string) {
   return useQuery({
     queryKey: ["notes", ownerId ?? "me"],
     queryFn: async (): Promise<Note[]> => {
-      try {
-        const owner = await ownerOrSelf(ownerId);
-        const { data, error } = await supabase
-          .from("notes")
-          .select("id, title, body, body_html, created_at, updated_at")
-          .eq("user_id", owner)
-          .order("updated_at", { ascending: false });
-        if (error) throw error;
-        return data ?? [];
-      } catch (e: any) {
-        if (e?.code === 'UNAUTH') return [];
-        throw e;
-      }
+      const owner = await ownerOrSelf(ownerId);
+      const { data, error } = await supabase
+        .from("notes")
+        .select("id, title, body, body_html, created_at, updated_at")
+        .eq("user_id", owner)
+        .order("updated_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
     },
   });
 }
@@ -113,20 +103,15 @@ export function useGoals(ownerId?: string) {
   return useQuery({
     queryKey: ["goals", ownerId ?? "me"],
     queryFn: async (): Promise<Goal[]> => {
-      try {
-        const owner = await ownerOrSelf(ownerId);
-        const { data, error } = await supabase
-          .from("goals")
-          .select("id, title, detail, target_date, progress, archived")
-          .eq("user_id", owner)
-          .eq("archived", false)
-          .order("created_at", { ascending: false });
-        if (error) throw error;
-        return (data ?? []) as Goal[];
-      } catch (e: any) {
-        if (e?.code === 'UNAUTH') return [] as Goal[];
-        throw e;
-      }
+      const owner = await ownerOrSelf(ownerId);
+      const { data, error } = await supabase
+        .from("goals")
+        .select("id, title, detail, target_date, progress, archived")
+        .eq("user_id", owner)
+        .eq("archived", false)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Goal[];
     },
   });
 }
@@ -161,20 +146,15 @@ export function useTasks(due: string, ownerId?: string) {
   return useQuery({
     queryKey: ["tasks", due, ownerId ?? "me"],
     queryFn: async (): Promise<Task[]> => {
-      try {
-        const owner = await ownerOrSelf(ownerId);
-        const { data, error } = await supabase
-          .from("tasks")
-          .select("id, title, priority, done, due_date")
-          .eq("user_id", owner)
-          .eq("due_date", due)
-          .order("created_at", { ascending: true });
-        if (error) throw error;
-        return (data ?? []) as Task[];
-      } catch (e: any) {
-        if (e?.code === 'UNAUTH') return [] as Task[];
-        throw e;
-      }
+      const owner = await ownerOrSelf(ownerId);
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("id, title, priority, done, due_date")
+        .eq("user_id", owner)
+        .eq("due_date", due)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as Task[];
     },
   });
 }

@@ -6,15 +6,6 @@ const STORAGE_KEY = "paperweight-lang";
 
 const dict = {
   en: {
-    "hw.title": "Handwriting",
-    "hw.open": "Handwriting → Text",
-    "hw.close": "Close",
-    "hw.clear": "Clear",
-    "hw.recognize": "Recognize",
-    "theme.label": "Theme",
-    "theme.light": "Light",
-    "theme.dark": "Dark",
-    "theme.system": "System",
     "brand.tagline": "Notes · Goals · Daily plan",
     "nav.signin": "Sign in",
     "landing.h1": "A quiet notebook for the things you keep meaning to do.",
@@ -138,15 +129,6 @@ const dict = {
 
   },
   uk: {
-    "hw.title": "Рукопис",
-    "hw.open": "Рукопис → Текст",
-    "hw.close": "Закрити",
-    "hw.clear": "Очистити",
-    "hw.recognize": "Розпізнати",
-    "theme.label": "Тема",
-    "theme.light": "Світла",
-    "theme.dark": "Темна",
-    "theme.system": "Системна",
     "brand.tagline": "Нотатки · Цілі · План на день",
     "nav.signin": "Увійти",
     "landing.h1": "Тихий записник для справ, які ви весь час відкладаєте.",

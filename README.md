@@ -1,12 +1,18 @@
-# Paperweight
+# Welcome to your Lovable project
 
-A quiet workspace for capturing notes, setting goals with real progress, and planning your day.
+This project was built with [Lovable](https://lovable.dev).
 
-Stack: Vite 8 + React 19 + TanStack (Start/Router/Query) + Tailwind CSS 4 + Supabase 2.
+## Build with Lovable
+
+Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+
+- **Ship faster**: describe what you want to build and Lovable handles the code.
+- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
+- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
-Requirements: Node 20+ and npm.
+Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
 ```sh
 git clone <this-repository-url>
@@ -15,35 +21,9 @@ npm i
 npm run dev
 ```
 
-## Environment
+## Built with
 
-Create a .env file with:
-
-```
-VITE_SUPABASE_URL=... // e.g. https://<project>.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=... // sb_publishable_...
-```
-
-Optional server-only variables (for server functions if ever needed):
-```
-SUPABASE_URL=...
-SUPABASE_SERVICE_ROLE_KEY=...
-```
-
-## OAuth (Google)
-
-Google sign-in uses Supabase OAuth directly via supabase.auth.signInWithOAuth. Configure the Google provider in your Supabase project.
-
-## Build
-
-- Lint: npm run lint
-- Build: npm run build
-- Preview: npm run preview
-
-## CI
-
-GitHub Actions workflow .github/workflows/ci.yml runs lint and build on push/PR to main.
-
-## License
-
-MIT
+- TanStack Start
+- TypeScript
+- React
+- Tailwind CSS

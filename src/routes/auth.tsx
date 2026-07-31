@@ -2,6 +2,7 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 import { LanguageToggle } from "@/components/language-toggle";
 import { useLang } from "@/lib/i18n";
 
@@ -9,12 +10,7 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   beforeLoad: async () => {
     const { data } = await supabase.auth.getUser();
-    // Prevent thrashing: only redirect if already authenticated and not returning from OAuth params
-    if (data.user) {
-      const url = typeof window !== 'undefined' ? new URL(window.location.href) : undefined;
-      const returningFromOAuth = !!(url && (url.searchParams.get('code') || window.location.hash.includes('access_token')));
-      if (!returningFromOAuth) throw redirect({ to: "/workspace" });
-    }
+    if (data.user) throw redirect({ to: "/workspace" });
   },
   head: () => ({
     meta: [
@@ -73,29 +69,16 @@ function AuthPage() {
 
   async function handleGoogle() {
     setBusy(true);
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { 
-          redirectTo: (() => {
-            const base = window.location.origin;
-            const urlPrefix = import.meta.env.BASE_URL && import.meta.env.BASE_URL !== "/" ? import.meta.env.BASE_URL.replace(/\/$/, "") : "";
-            return base + urlPrefix + "/";
-          })(),
-        },
-      });
-      if (error) throw error;
-      if (data?.url) {
-        window.location.href = data.url; // Supabase redirects to provider
-        return;
-      }
-      // If no redirect happened (e.g., embedded flow), check session and navigate
-      const { data: userData } = await supabase.auth.getUser();
-      if (userData.user) navigate({ to: "/workspace", replace: true });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not sign in with Google");
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
+    });
+    if (result.error) {
       setBusy(false);
+      toast.error("Could not sign in with Google");
+      return;
     }
+    if (result.redirected) return;
+    navigate({ to: "/workspace", replace: true });
   }
 
   return (

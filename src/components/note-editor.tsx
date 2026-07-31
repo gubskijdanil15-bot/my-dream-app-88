@@ -1,12 +1,9 @@
-﻿import DOMPurify from "dompurify";
+import DOMPurify from "dompurify";
 import { useEffect, useRef, useState } from "react";
 import { useLang } from "@/lib/i18n";
 import type { Note } from "@/lib/workspace-data";
 
 const SANITIZE_CONFIG = {
-  // Р‘РµР·РїРµРєР°: Р·Р°Р±РѕСЂРѕРЅСЏС”РјРѕ Р·Р°СЃС‚Р°СЂС–Р»РёР№ <font>, Р·Р°Р»РёС€Р°С”РјРѕ РѕР±РјРµР¶РµРЅРёР№ РЅР°Р±С–СЂ С‚РµРіС–РІ.
-  // Р”РѕР·РІРѕР»СЏС”РјРѕ Р»РёС€Рµ Р±РµР·РїРµС‡РЅС– inline-СЃС‚РёР»С– РґР»СЏ color/background-color/font-size, С„С–Р»СЊС‚СЂСѓС”РјРѕ С–РЅС€Рµ.
-
   ALLOWED_TAGS: [
     "b",
     "strong",
@@ -28,10 +25,7 @@ const SANITIZE_CONFIG = {
     "h3",
     "blockquote",
   ],
-  ALLOWED_ATTR: ["style"],
-  FORBID_TAGS: ["font", "script", "style"],
-  ALLOWED_URI_REGEXP: /^(?!(?:javascript|data):)/i,
-  FORCE_BODY: true,
+  ALLOWED_ATTR: ["style", "color", "size", "face"],
 };
 
 export function sanitizeNote(html: string): string {
@@ -79,44 +73,7 @@ export function NoteEditor({ note, canEdit, saving, onSave, onDelete }: Props) {
     document.execCommand(command, false, value);
   }
 
-  function sanitizeInlineStyles(el: HTMLElement) {
-    // Р”РѕР·РІРѕР»СЏС”РјРѕ Р»РёС€Рµ color, background-color, font-size
-    const walker = document.createTreeWalker(el, NodeFilter.SHOW_ELEMENT);
-    // @ts-expect-error - Type narrow at runtime
-    for (let node = walker.currentNode as HTMLElement | null; node; node = walker.nextNode() as HTMLElement | null) {
-      if (!(node instanceof HTMLElement)) continue;
-      const style = node.getAttribute("style");
-      if (!style) continue;
-      const keep: string[] = [];
-      style.split(";").forEach((decl) => {
-        const [rawProp, rawVal] = decl.split(":");
-        const prop = rawProp?.trim().toLowerCase();
-        const val = rawVal?.trim().toLowerCase() ?? "";
-        if (!prop) return;
-        if (["color", "background-color", "font-size"].includes(prop) && !/url\(|expression\(/.test(val)) {
-          keep.push(`${prop}: ${val}`);
-        }
-      });
-      if (keep.length) node.setAttribute("style", keep.join("; "));
-      else node.removeAttribute("style");
-    }
-  }
-
-  // Debounced saver to avoid heavy work on every keystroke
-  const saveDebounced = useRef<ReturnType<typeof setTimeout> | null>(null);
-  function scheduleSave() {
-    if (!canEdit) return;
-    if (saveDebounced.current) clearTimeout(saveDebounced.current);
-    saveDebounced.current = setTimeout(() => {
-      if (bodyRef.current) sanitizeInlineStyles(bodyRef.current);
-      const html = sanitizeNote(bodyRef.current?.innerHTML ?? "");
-      const plain = (bodyRef.current?.innerText ?? "").slice(0, 8000);
-      onSave({ title: title.trim() || "Untitled", body_html: html, body: plain });
-    }, 500); // 500ms debounce
-  }
-
-  function saveNow() {
-    if (bodyRef.current) sanitizeInlineStyles(bodyRef.current);
+  function save() {
     const html = sanitizeNote(bodyRef.current?.innerHTML ?? "");
     const plain = (bodyRef.current?.innerText ?? "").slice(0, 8000);
     onSave({ title: title.trim() || "Untitled", body_html: html, body: plain });
@@ -136,7 +93,7 @@ export function NoteEditor({ note, canEdit, saving, onSave, onDelete }: Props) {
         {canEdit && (
           <>
             <button
-              onClick={saveNow}
+              onClick={save}
               disabled={saving}
               className="text-xs font-semibold tracking-wide text-muted-foreground hover:text-accent disabled:opacity-50"
             >
@@ -184,7 +141,7 @@ export function NoteEditor({ note, canEdit, saving, onSave, onDelete }: Props) {
           </button>
           <span className="mx-1 h-5 w-px bg-border" />
           <button className={btn} onClick={() => exec("fontSize", "2")} title={t("fmt.small")}>
-            Aв€’
+            A−
           </button>
           <button className={btn} onClick={() => exec("fontSize", "4")} title={t("fmt.normal")}>
             A
@@ -202,7 +159,7 @@ export function NoteEditor({ note, canEdit, saving, onSave, onDelete }: Props) {
             onClick={() => exec("insertUnorderedList")}
             title={t("fmt.bullets")}
           >
-            вЂў
+            •
           </button>
           <button className={btn} onClick={() => exec("insertOrderedList")} title={t("fmt.numbers")}>
             1.
@@ -253,7 +210,6 @@ export function NoteEditor({ note, canEdit, saving, onSave, onDelete }: Props) {
 
       <div
         ref={bodyRef}
-        onInput={scheduleSave}
         contentEditable={canEdit}
         suppressContentEditableWarning
         data-placeholder={t("ws.writeItOut")}
