@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { RulerProgress } from "@/components/ruler-progress";
 import { LanguageToggle } from "@/components/language-toggle";
 import { NoteEditor } from "@/components/note-editor";
+import { ThemeToggle } from "@/components/theme-toggle";
+
 import { useLang } from "@/lib/i18n";
 import { useJoinedJournals } from "@/lib/journal-data";
 import {
@@ -178,6 +180,13 @@ function Workspace() {
           >
             {t("ws.tabShare")}
           </Link>
+          <Link
+            to="/profile"
+            className="text-center text-[11px] font-semibold leading-tight text-muted-foreground hover:text-accent"
+          >
+            {t("ws.tabProfile")}
+          </Link>
+          <ThemeToggle />
           <LanguageToggle className="scale-90" />
           <button
             onClick={handleSignOut}
@@ -186,6 +195,7 @@ function Workspace() {
             {t("ws.out")}
           </button>
         </div>
+
       </nav>
 
       {/* Mobile top bar */}
