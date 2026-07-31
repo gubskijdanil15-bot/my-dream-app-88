@@ -59,6 +59,8 @@ export function NoteEditor({ note, canEdit, saving, onSave, onDelete }: Props) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const [title, setTitle] = useState(note.title);
   const [showColors, setShowColors] = useState(false);
+  const [showPad, setShowPad] = useState(false);
+
 
   // Load note content only when a different note is opened, so typing never
   // re-renders (and therefore never blurs) the editable area.
@@ -169,11 +171,29 @@ export function NoteEditor({ note, canEdit, saving, onSave, onDelete }: Props) {
           <button className={btn} onClick={() => setShowColors((v) => !v)}>
             {t("fmt.colors")}
           </button>
+          <button
+            className={`${btn} ${showPad ? "border-accent text-accent" : ""}`}
+            onClick={() => setShowPad((v) => !v)}
+            title={t("hw.title")}
+          >
+            ✎ {t("hw.button")}
+          </button>
           <button className={btn} onClick={() => exec("removeFormat")} title={t("fmt.clear")}>
             {t("fmt.clear")}
           </button>
         </div>
       )}
+
+      {canEdit && showPad && (
+        <HandwritingPad
+          onText={(text) => {
+            bodyRef.current?.focus();
+            document.execCommand("insertText", false, text);
+          }}
+          onClose={() => setShowPad(false)}
+        />
+      )}
+
 
       {canEdit && showColors && (
         <div className="mb-3 space-y-2 rounded-xl border border-border bg-card p-3">
