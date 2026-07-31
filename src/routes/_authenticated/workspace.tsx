@@ -307,6 +307,25 @@ function Workspace() {
             <p className="truncate font-mono text-xs text-muted-foreground sm:text-sm">
               {longDate(new Date())}
             </p>
+            {(joined.data?.length ?? 0) > 0 && (
+              <select
+                value={ownerId ?? ""}
+                onChange={(e) => {
+                  setOwnerId(e.target.value || null);
+                  setSelectedId(null);
+                }}
+                aria-label={t("ws.viewingNotebook")}
+                className="mt-2 max-w-full rounded-xl border border-border bg-card px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+              >
+                <option value="">{t("share.myNotebook")}</option>
+                {joined.data?.map((j) => (
+                  <option key={j.id} value={j.owner_id}>
+                    {j.name ?? t("share.someone")}
+                    {j.permission === "read" ? ` · ${t("share.readOnly")}` : ""}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
           {canEdit && (
             <button
@@ -322,6 +341,7 @@ function Workspace() {
             </span>
           )}
         </header>
+
 
         <div className="max-w-4xl p-4 pb-28 sm:p-8 md:pb-8">
           {goalOpen && (
