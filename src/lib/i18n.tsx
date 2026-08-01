@@ -143,6 +143,16 @@ const dict = {
     "hw.rate": "Too many requests — try again in a moment",
     "hw.credits": "AI credits are used up",
 
+    "files.title": "Attachments",
+    "files.add": "Add files",
+    "files.uploading": "Uploading…",
+    "files.empty": "No files attached yet.",
+    "files.open": "Open",
+    "files.error": "Upload failed",
+    "files.tooLarge": "File is larger than 50 MB",
+    "files.hint": "Images, audio, video or any other file, up to 50 MB each.",
+    "ws.tabGoals": "Goals",
+
     "profile.title": "Profile",
     "profile.sub": "Your name, email and password.",
     "profile.tab": "Profile",
