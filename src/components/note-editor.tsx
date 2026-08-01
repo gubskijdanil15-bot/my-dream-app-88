@@ -50,11 +50,12 @@ type Props = {
   note: Note;
   canEdit: boolean;
   saving?: boolean;
+  ownerId?: string;
   onSave: (input: { title: string; body_html: string; body: string }) => void;
   onDelete: () => void;
 };
 
-export function NoteEditor({ note, canEdit, saving, onSave, onDelete }: Props) {
+export function NoteEditor({ note, canEdit, saving, ownerId, onSave, onDelete }: Props) {
   const { t } = useLang();
   const bodyRef = useRef<HTMLDivElement>(null);
   const [title, setTitle] = useState(note.title);
