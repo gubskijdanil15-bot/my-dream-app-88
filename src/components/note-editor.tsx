@@ -1,6 +1,7 @@
 import DOMPurify from "dompurify";
 import { useEffect, useRef, useState } from "react";
 import { HandwritingPad } from "@/components/handwriting-pad";
+import { NoteAttachments } from "@/components/note-attachments";
 import { useLang } from "@/lib/i18n";
 import type { Note } from "@/lib/workspace-data";
 
