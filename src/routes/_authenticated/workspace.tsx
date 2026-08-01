@@ -42,7 +42,7 @@ export const Route = createFileRoute("/_authenticated/workspace")({
   component: Workspace,
 });
 
-type Tab = "notes" | "plan" | "note";
+type Tab = "notes" | "note" | "goals" | "plan";
 
 function Workspace() {
   const navigate = useNavigate();
@@ -59,13 +59,12 @@ function Workspace() {
       year: "numeric",
     });
   const shortStamp = (iso: string) =>
-    new Date(iso)
-      .toLocaleString(locale, {
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+    new Date(iso).toLocaleString(locale, {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
   const joined = useJoinedJournals();
   const [ownerId, setOwnerId] = useState<string | null>(null);
@@ -88,7 +87,7 @@ function Workspace() {
 
   const [capture, setCapture] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [tab, setTab] = useState<Tab>("plan");
+  const [tab, setTab] = useState<Tab>("notes");
 
   const [taskTitle, setTaskTitle] = useState("");
   const [taskPriority, setTaskPriority] = useState<Task["priority"]>("medium");
@@ -97,7 +96,7 @@ function Workspace() {
   const [goalDate, setGoalDate] = useState("");
 
   const selected = notes.data?.find((n) => n.id === selectedId) ?? null;
-
+  const onNotes = tab === "notes" || tab === "note";
 
   async function handleSignOut() {
     await queryClient.cancelQueries();
@@ -114,6 +113,7 @@ function Workspace() {
       const created = await createNote.mutateAsync(title.slice(0, 200));
       setCapture("");
       setSelectedId(created.id);
+      setTab("note");
     } catch {
       toast.error(t("ws.errNote"));
     }
@@ -155,23 +155,49 @@ function Workspace() {
   const priorityLabel = (p: Task["priority"]) =>
     t(p === "high" ? "priority.high" : p === "low" ? "priority.low" : "priority.medium");
 
+  const headerTitle =
+    tab === "goals" ? t("ws.activeGoals") : tab === "plan" ? t("ws.todayList") : t("ws.notes");
+
+  const notebookSwitcher = (joined.data?.length ?? 0) > 0 && (
+    <select
+      value={ownerId ?? ""}
+      onChange={(e) => {
+        setOwnerId(e.target.value || null);
+        setSelectedId(null);
+      }}
+      aria-label={t("ws.viewingNotebook")}
+      className="mt-2 max-w-full rounded-xl border border-border bg-card px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+    >
+      <option value="">{t("share.myNotebook")}</option>
+      {joined.data?.map((j) => (
+        <option key={j.id} value={j.owner_id}>
+          {j.name ?? t("share.someone")}
+          {j.permission === "read" ? ` · ${t("share.readOnly")}` : ""}
+        </option>
+      ))}
+    </select>
+  );
+
+  const desktopTab = (key: Tab, label: string, count: number) => (
+    <button
+      key={key}
+      onClick={() => setTab(key)}
+      className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+        (key === "notes" ? onNotes : tab === key)
+          ? "bg-foreground text-background"
+          : "text-muted-foreground hover:text-accent"
+      }`}
+    >
+      {label} <span className="opacity-60">{count}</span>
+    </button>
+  );
+
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground md:flex-row">
       {/* Desktop rail */}
       <nav className="hidden w-16 flex-col items-center gap-8 border-r border-border py-8 md:flex">
         <div className="flex size-8 items-center justify-center rounded-lg bg-foreground text-xs font-bold text-background">
           P
-        </div>
-        <div className="flex flex-col gap-6">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-accent/10 font-mono text-xs font-bold text-accent">
-            {String(notes.data?.length ?? 0).padStart(2, "0")}
-          </div>
-          <div className="flex size-10 items-center justify-center rounded-xl font-mono text-xs font-bold text-muted-foreground">
-            {String(goals.data?.length ?? 0).padStart(2, "0")}
-          </div>
-          <div className="flex size-10 items-center justify-center rounded-xl font-mono text-xs font-bold text-muted-foreground">
-            {String(tasks.data?.filter((t2) => !t2.done).length ?? 0).padStart(2, "0")}
-          </div>
         </div>
         <div className="mt-auto flex flex-col items-center gap-4">
           <Link
@@ -195,7 +221,6 @@ function Workspace() {
             {t("ws.out")}
           </button>
         </div>
-
       </nav>
 
       {/* Mobile top bar */}
@@ -209,201 +234,128 @@ function Workspace() {
         <div className="flex shrink-0 items-center gap-2">
           <ThemeToggle />
           <LanguageToggle />
-
-          <button
-            onClick={handleSignOut}
-            className="text-xs font-semibold text-muted-foreground"
-          >
+          <button onClick={handleSignOut} className="text-xs font-semibold text-muted-foreground">
             {t("ws.out")}
           </button>
         </div>
-
       </header>
 
-      {/* Notes column */}
-      <section
-        className={`flex-col border-border bg-foreground/[0.01] md:flex md:w-[380px] md:border-r ${
-          tab === "notes" ? "flex flex-1 overflow-hidden" : "hidden"
-        }`}
-      >
-        <div className="border-b border-border p-4 sm:p-6">
-          {(joined.data?.length ?? 0) > 0 && (
-            <select
-              value={ownerId ?? ""}
-              onChange={(e) => {
-                setOwnerId(e.target.value || null);
-                setSelectedId(null);
-              }}
-              className="mb-3 w-full rounded-xl border border-border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-            >
-              <option value="">{t("share.myNotebook")}</option>
-              {joined.data?.map((j) => (
-                <option key={j.id} value={j.owner_id}>
-                  {j.name ?? t("share.someone")}
-                  {j.permission === "read" ? ` · ${t("share.readOnly")}` : ""}
-                </option>
-              ))}
-            </select>
-          )}
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="label-mono">{t("ws.notes")}</h2>
-            <span className="shrink-0 text-[11px] text-muted-foreground">
-              {notes.data?.length ?? 0} {t("ws.total")}
-            </span>
-          </div>
-          {canEdit && (
-            <form onSubmit={submitCapture}>
-              <input
-                value={capture}
-                onChange={(e) => setCapture(e.target.value)}
-                placeholder={t("ws.quickCapture")}
-                maxLength={200}
-                className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-base placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring sm:text-sm"
-              />
-            </form>
-          )}
-        </div>
-
-
-        <div className="flex-1 overflow-y-auto">
-          {notes.isLoading && (
-            <p className="p-6 font-mono text-[10px] tracking-wide text-muted-foreground">
-              {t("ws.loading")}
-            </p>
-          )}
-          {notes.data?.length === 0 && (
-            <p className="p-6 text-xs leading-relaxed text-muted-foreground">
-              {t("ws.emptyNotes")}
-            </p>
-          )}
-          {notes.data?.map((note) => (
-            <button
-              key={note.id}
-              onClick={() => {
-                setSelectedId(note.id);
-                setTab("note");
-              }}
-              className={`group block w-full border-b border-border p-4 text-left transition-colors hover:bg-card sm:p-6 ${
-                note.id === selectedId ? "bg-card" : ""
-              }`}
-            >
-              <div
-                className={`mb-2 font-mono text-[10px] ${
-                  note.id === selectedId ? "text-accent" : "text-muted-foreground"
-                }`}
-              >
-                {shortStamp(note.updated_at)}
-              </div>
-              <h3 className="mb-2 text-sm font-semibold transition-colors group-hover:text-accent">
-                {note.title}
-              </h3>
-              <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                {note.body || t("ws.noDetail")}
-              </p>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* Main workspace */}
-      <main
-        className={`relative flex-1 flex-col overflow-y-auto md:flex ${
-          tab === "notes" ? "hidden" : "flex"
-        }`}
-      >
-        <header className="sticky top-0 z-10 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border bg-background/80 px-4 py-4 backdrop-blur-md sm:px-8 sm:py-6">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3 border-b border-border px-4 py-4 sm:px-8 sm:py-5">
           <div className="min-w-0">
             <h1 className="truncate text-xl font-extrabold tracking-tight sm:text-2xl">
-              {t("ws.planner")}
+              {headerTitle}
             </h1>
-            <p className="truncate font-mono text-xs text-muted-foreground sm:text-sm">
+            <p className="truncate text-xs text-muted-foreground sm:text-sm">
               {longDate(new Date())}
             </p>
-            {(joined.data?.length ?? 0) > 0 && (
-              <select
-                value={ownerId ?? ""}
-                onChange={(e) => {
-                  setOwnerId(e.target.value || null);
-                  setSelectedId(null);
-                }}
-                aria-label={t("ws.viewingNotebook")}
-                className="mt-2 max-w-full rounded-xl border border-border bg-card px-2.5 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+            {notebookSwitcher}
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {!canEdit && (
+              <span className="rounded-full bg-muted px-3 py-1.5 text-[11px] text-muted-foreground">
+                {t("share.readOnly")}
+              </span>
+            )}
+            {canEdit && tab === "goals" && (
+              <button
+                onClick={() => setGoalOpen((v) => !v)}
+                className="rounded-full bg-foreground px-4 py-2 text-xs font-bold text-background shadow-sm transition-colors hover:bg-accent active:scale-95"
               >
-                <option value="">{t("share.myNotebook")}</option>
-                {joined.data?.map((j) => (
-                  <option key={j.id} value={j.owner_id}>
-                    {j.name ?? t("share.someone")}
-                    {j.permission === "read" ? ` · ${t("share.readOnly")}` : ""}
-                  </option>
-                ))}
-              </select>
+                {goalOpen ? t("ws.close") : t("ws.newGoal")}
+              </button>
+            )}
+            {tab === "note" && (
+              <button
+                onClick={() => setTab("notes")}
+                className="rounded-full border border-border px-4 py-2 text-xs font-bold md:hidden"
+              >
+                {t("ws.tabNotes")}
+              </button>
             )}
           </div>
-          {canEdit && (
-            <button
-              onClick={() => setGoalOpen((v) => !v)}
-              className="shrink-0 rounded-full bg-foreground px-4 py-2 text-xs font-bold tracking-wide text-background shadow-sm transition-colors hover:bg-accent active:scale-95"
-            >
-              {goalOpen ? t("ws.close") : t("ws.newGoal")}
-            </button>
-          )}
-          {!canEdit && (
-            <span className="shrink-0 rounded-full bg-muted px-3 py-1.5 text-[11px] text-muted-foreground">
-              {t("share.readOnly")}
-            </span>
-          )}
         </header>
 
+        {/* Desktop / tablet tabs */}
+        <div className="hidden shrink-0 items-center gap-2 border-b border-border px-8 py-2.5 md:flex">
+          {desktopTab("notes", t("ws.tabNotes"), notes.data?.length ?? 0)}
+          {desktopTab("goals", t("ws.tabGoals"), goals.data?.length ?? 0)}
+          {desktopTab("plan", t("ws.tabPlan"), tasks.data?.filter((x) => !x.done).length ?? 0)}
+        </div>
 
-        <div className="max-w-4xl p-4 pb-28 sm:p-8 md:pb-8">
-          {goalOpen && (
-            <form
-              onSubmit={submitGoal}
-              className="animate-entry mb-10 flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4"
+        {/* NOTES */}
+        {onNotes && (
+          <div className="flex min-h-0 flex-1 overflow-hidden">
+            <section
+              className={`min-w-0 flex-col border-border bg-foreground/[0.01] md:flex md:w-[340px] md:shrink-0 md:border-r ${
+                tab === "note" ? "hidden" : "flex w-full flex-1"
+              }`}
             >
-              <div className="min-w-[180px] flex-1 space-y-1">
-                <label className="label-mono block" htmlFor="goal-title">
-                  {t("ws.goal")}
-                </label>
-                <input
-                  id="goal-title"
-                  value={goalTitle}
-                  onChange={(e) => setGoalTitle(e.target.value)}
-                  maxLength={160}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-base focus:outline-none focus:ring-1 focus:ring-ring sm:text-sm"
-                />
+              <div className="shrink-0 border-b border-border p-4">
+                {canEdit && (
+                  <form onSubmit={submitCapture}>
+                    <input
+                      value={capture}
+                      onChange={(e) => setCapture(e.target.value)}
+                      placeholder={t("ws.quickCapture")}
+                      maxLength={200}
+                      className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-base placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring"
+                    />
+                  </form>
+                )}
               </div>
-              <div className="space-y-1">
-                <label className="label-mono block" htmlFor="goal-date">
-                  {t("ws.target")}
-                </label>
-                <input
-                  id="goal-date"
-                  type="date"
-                  value={goalDate}
-                  onChange={(e) => setGoalDate(e.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 font-mono text-xs focus:outline-none focus:ring-1 focus:ring-ring"
-                />
+              <div className="flex-1 overflow-y-auto pb-24 md:pb-0">
+                {notes.isLoading && (
+                  <p className="p-6 text-xs text-muted-foreground">{t("ws.loading")}</p>
+                )}
+                {notes.data?.length === 0 && (
+                  <p className="p-6 text-xs leading-relaxed text-muted-foreground">
+                    {t("ws.emptyNotes")}
+                  </p>
+                )}
+                {notes.data?.map((note) => (
+                  <button
+                    key={note.id}
+                    onClick={() => {
+                      setSelectedId(note.id);
+                      setTab("note");
+                    }}
+                    className={`group block w-full border-b border-border p-4 text-left transition-colors hover:bg-card ${
+                      note.id === selectedId ? "bg-card" : ""
+                    }`}
+                  >
+                    <div
+                      className={`mb-2 text-[11px] ${
+                        note.id === selectedId ? "text-accent" : "text-muted-foreground"
+                      }`}
+                    >
+                      {shortStamp(note.updated_at)}
+                    </div>
+                    <h3 className="mb-2 text-sm font-semibold transition-colors group-hover:text-accent">
+                      {note.title}
+                    </h3>
+                    <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                      {note.body || t("ws.noDetail")}
+                    </p>
+                  </button>
+                ))}
               </div>
-              <button
-                type="submit"
-                className="rounded-full bg-accent px-4 py-2 text-xs font-bold tracking-wide text-accent-foreground"
-              >
-                {t("ws.add")}
-              </button>
-            </form>
-          )}
+            </section>
 
-          {/* Note editor on mobile */}
-          {tab === "note" && (
-            <div className="animate-entry mb-10 md:hidden">
-              <h2 className="label-mono mb-4">{t("ws.note")}</h2>
-              {!selected && <p className="text-xs text-muted-foreground">{t("ws.selectNote")}</p>}
+            <div
+              className={`min-w-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-8 md:block md:pb-10 ${
+                tab === "note" ? "block" : "hidden"
+              }`}
+            >
+              {!selected && (
+                <p className="text-xs text-muted-foreground">{t("ws.selectNote")}</p>
+              )}
               {selected && (
                 <NoteEditor
                   key={selected.id}
                   note={selected}
                   canEdit={canEdit}
+                  ownerId={scope}
                   saving={updateNote.isPending}
                   onSave={(input) =>
                     updateNote.mutate(
@@ -414,195 +366,219 @@ function Workspace() {
                   onDelete={() => {
                     deleteNote.mutate(selected.id);
                     setSelectedId(null);
+                    setTab("notes");
                   }}
                 />
               )}
             </div>
-          )}
+          </div>
+        )}
 
-          {tab !== "note" && (
-            <>
-              {/* Goals */}
-              <div className="mb-12">
-                <h2 className="label-mono mb-6">{t("ws.activeGoals")}</h2>
-                {goals.data?.length === 0 && (
-                  <p className="text-xs text-muted-foreground">{t("ws.emptyGoals")}</p>
-                )}
-                <div className="grid gap-8">
-                  {goals.data?.map((goal) => (
-                    <div key={goal.id} className="animate-entry">
-                      <div className="mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-                        <div className="min-w-0">
-                          <h4 className="truncate text-sm font-bold">{goal.title}</h4>
-                          <p className="font-mono text-[10px] text-muted-foreground">
-                            {goal.target_date
-                              ? `${t("ws.target")}: ${goal.target_date}`
-                              : t("ws.ongoing")}
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-                          <button
-                            onClick={() =>
-                              updateGoal.mutate({
-                                id: goal.id,
-                                progress: Math.max(0, goal.progress - 10),
-                              })
-                            }
-                            className="size-8 rounded-full border border-border font-mono text-xs hover:border-accent hover:text-accent"
-                            aria-label={`− ${goal.title}`}
-                            disabled={!canEdit}
-                          >
-                            −
-                          </button>
-                          <span className="w-10 text-right font-mono text-xs">
-                            {goal.progress}%
-                          </span>
-                          <button
-                            onClick={() =>
-                              updateGoal.mutate({
-                                id: goal.id,
-                                progress: Math.min(100, goal.progress + 10),
-                              })
-                            }
-                            className="size-8 rounded-full border border-border font-mono text-xs hover:border-accent hover:text-accent"
-                            aria-label={`+ ${goal.title}`}
-                            disabled={!canEdit}
-                          >
-                            +
-                          </button>
-                          <button
-                            onClick={() => updateGoal.mutate({ id: goal.id, archived: true })}
-                            disabled={!canEdit}
-                            className="font-mono text-[10px] tracking-wide text-muted-foreground hover:text-accent"
-                          >
-                            {t("ws.done")}
-                          </button>
-                        </div>
-                      </div>
-                      <RulerProgress value={goal.progress} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Today's list */}
-              <div className="animate-entry mb-12">
-                <h2 className="label-mono mb-6">{t("ws.todayList")}</h2>
-                {canEdit && (
-                  <form onSubmit={submitTask} className="mb-4 flex flex-wrap gap-2">
+        {/* GOALS */}
+        {tab === "goals" && (
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-8 md:pb-10">
+            <div className="max-w-3xl">
+              {goalOpen && canEdit && (
+                <form
+                  onSubmit={submitGoal}
+                  className="animate-entry mb-8 flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4"
+                >
+                  <div className="min-w-[180px] flex-1 space-y-1">
+                    <label className="label-mono block" htmlFor="goal-title">
+                      {t("ws.goal")}
+                    </label>
                     <input
-                      value={taskTitle}
-                      onChange={(e) => setTaskTitle(e.target.value)}
-                      placeholder={t("ws.addTask")}
-                      maxLength={200}
-                      className="w-full min-w-0 flex-1 rounded-xl border border-border bg-card px-3 py-2.5 text-base placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring sm:w-auto sm:text-sm"
+                      id="goal-title"
+                      value={goalTitle}
+                      onChange={(e) => setGoalTitle(e.target.value)}
+                      maxLength={160}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-base focus:outline-none focus:ring-1 focus:ring-ring"
                     />
-                    <select
-                      value={taskPriority}
-                      onChange={(e) => setTaskPriority(e.target.value as Task["priority"])}
-                      className="flex-1 rounded-xl border border-border bg-card px-2 py-2 text-xs focus:outline-none sm:flex-none"
-                    >
-                      <option value="high">{t("priority.high")}</option>
-                      <option value="medium">{t("priority.medium")}</option>
-                      <option value="low">{t("priority.low")}</option>
-                    </select>
-                    <button
-                      type="submit"
-                      className="flex-1 rounded-xl bg-foreground px-4 py-2.5 text-xs font-bold tracking-wide text-background hover:bg-accent sm:flex-none"
-                    >
-                      {t("ws.add")}
-                    </button>
-                  </form>
-                )}
-
-
-                <div className="space-y-1">
-                  {tasks.data?.length === 0 && (
-                    <p className="py-3 text-xs text-muted-foreground">{t("ws.emptyTasks")}</p>
-                  )}
-                  {tasks.data?.map((task) => (
-                    <div
-                      key={task.id}
-                      className="group flex items-center gap-3 border-b border-border/40 py-3"
-                    >
-                      <button
-                        onClick={() => toggleTask.mutate({ id: task.id, done: !task.done })}
-                        disabled={!canEdit}
-                        aria-label={task.title}
-                        className={`flex size-6 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
-                          task.done ? "border-accent bg-accent" : "border-border hover:border-accent"
-                        }`}
-                      >
-                        <span
-                          className={`size-1.5 rounded-full bg-background ${
-                            task.done ? "opacity-100" : "opacity-0"
-                          }`}
-                        />
-                      </button>
-                      <span
-                        className={`min-w-0 flex-1 break-words text-sm transition-all ${
-                          task.done ? "text-muted-foreground line-through" : ""
-                        }`}
-                      >
-                        {task.title}
-                      </span>
-                      <span className="shrink-0 font-mono text-[10px] text-muted-foreground/50">
-                        {priorityLabel(task.priority)}
-                      </span>
-                      <button
-                        onClick={() => deleteTask.mutate(task.id)}
-                        disabled={!canEdit}
-                        className="shrink-0 font-mono text-[10px] tracking-wide text-muted-foreground/60 transition-colors hover:text-accent md:text-muted-foreground/0 md:group-hover:text-muted-foreground"
-                        aria-label={`${t("ws.delete")} ${task.title}`}
-                      >
-                        {t("ws.del")}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Note detail (desktop) */}
-              {selected && (
-                <div className="animate-entry hidden border-t border-border pt-8 md:block">
-                  <h2 className="label-mono mb-4">{t("ws.note")}</h2>
-                  <NoteEditor
-                    key={selected.id}
-                    note={selected}
-                    canEdit={canEdit}
-                    saving={updateNote.isPending}
-                    onSave={(input) =>
-                      updateNote.mutate(
-                        { id: selected.id, ...input },
-                        { onSuccess: () => toast.success(t("ws.noteSaved")) },
-                      )
-                    }
-                    onDelete={() => {
-                      deleteNote.mutate(selected.id);
-                      setSelectedId(null);
-                    }}
-                  />
-                </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="label-mono block" htmlFor="goal-date">
+                      {t("ws.target")}
+                    </label>
+                    <input
+                      id="goal-date"
+                      type="date"
+                      value={goalDate}
+                      onChange={(e) => setGoalDate(e.target.value)}
+                      className="rounded-lg border border-border bg-background px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="rounded-full bg-accent px-4 py-2 text-xs font-bold text-accent-foreground"
+                  >
+                    {t("ws.add")}
+                  </button>
+                </form>
               )}
-            </>
-          )}
-        </div>
-      </main>
+
+              {!goalOpen && canEdit && (
+                <button
+                  onClick={() => setGoalOpen(true)}
+                  className="mb-8 rounded-full border border-border px-4 py-2 text-xs font-bold hover:border-accent hover:text-accent md:hidden"
+                >
+                  {t("ws.newGoal")}
+                </button>
+              )}
+
+              {goals.data?.length === 0 && (
+                <p className="text-xs text-muted-foreground">{t("ws.emptyGoals")}</p>
+              )}
+              <div className="grid gap-8">
+                {goals.data?.map((goal) => (
+                  <div key={goal.id} className="animate-entry">
+                    <div className="mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+                      <div className="min-w-0">
+                        <h4 className="truncate text-sm font-bold">{goal.title}</h4>
+                        <p className="text-[11px] text-muted-foreground">
+                          {goal.target_date
+                            ? `${t("ws.target")}: ${goal.target_date}`
+                            : t("ws.ongoing")}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+                        <button
+                          onClick={() =>
+                            updateGoal.mutate({
+                              id: goal.id,
+                              progress: Math.max(0, goal.progress - 10),
+                            })
+                          }
+                          className="size-8 rounded-full border border-border text-xs hover:border-accent hover:text-accent"
+                          aria-label={`− ${goal.title}`}
+                          disabled={!canEdit}
+                        >
+                          −
+                        </button>
+                        <span className="w-10 text-right text-xs">{goal.progress}%</span>
+                        <button
+                          onClick={() =>
+                            updateGoal.mutate({
+                              id: goal.id,
+                              progress: Math.min(100, goal.progress + 10),
+                            })
+                          }
+                          className="size-8 rounded-full border border-border text-xs hover:border-accent hover:text-accent"
+                          aria-label={`+ ${goal.title}`}
+                          disabled={!canEdit}
+                        >
+                          +
+                        </button>
+                        <button
+                          onClick={() => updateGoal.mutate({ id: goal.id, archived: true })}
+                          disabled={!canEdit}
+                          className="text-[11px] font-semibold text-muted-foreground hover:text-accent"
+                        >
+                          {t("ws.done")}
+                        </button>
+                      </div>
+                    </div>
+                    <RulerProgress value={goal.progress} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PLAN */}
+        {tab === "plan" && (
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-8 md:pb-10">
+            <div className="max-w-3xl">
+              {canEdit && (
+                <form onSubmit={submitTask} className="mb-6 flex flex-wrap gap-2">
+                  <input
+                    value={taskTitle}
+                    onChange={(e) => setTaskTitle(e.target.value)}
+                    placeholder={t("ws.addTask")}
+                    maxLength={200}
+                    className="w-full min-w-0 flex-1 rounded-xl border border-border bg-card px-3 py-2.5 text-base placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring sm:w-auto"
+                  />
+                  <select
+                    value={taskPriority}
+                    onChange={(e) => setTaskPriority(e.target.value as Task["priority"])}
+                    className="flex-1 rounded-xl border border-border bg-card px-2 py-2 text-xs focus:outline-none sm:flex-none"
+                  >
+                    <option value="high">{t("priority.high")}</option>
+                    <option value="medium">{t("priority.medium")}</option>
+                    <option value="low">{t("priority.low")}</option>
+                  </select>
+                  <button
+                    type="submit"
+                    className="flex-1 rounded-xl bg-foreground px-4 py-2.5 text-xs font-bold text-background hover:bg-accent sm:flex-none"
+                  >
+                    {t("ws.add")}
+                  </button>
+                </form>
+              )}
+
+              <div className="space-y-1">
+                {tasks.data?.length === 0 && (
+                  <p className="py-3 text-xs text-muted-foreground">{t("ws.emptyTasks")}</p>
+                )}
+                {tasks.data?.map((task) => (
+                  <div
+                    key={task.id}
+                    className="group flex items-center gap-3 border-b border-border/40 py-3"
+                  >
+                    <button
+                      onClick={() => toggleTask.mutate({ id: task.id, done: !task.done })}
+                      disabled={!canEdit}
+                      aria-label={task.title}
+                      className={`flex size-6 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
+                        task.done ? "border-accent bg-accent" : "border-border hover:border-accent"
+                      }`}
+                    >
+                      <span
+                        className={`size-1.5 rounded-full bg-background ${
+                          task.done ? "opacity-100" : "opacity-0"
+                        }`}
+                      />
+                    </button>
+                    <span
+                      className={`min-w-0 flex-1 break-words text-sm transition-all ${
+                        task.done ? "text-muted-foreground line-through" : ""
+                      }`}
+                    >
+                      {task.title}
+                    </span>
+                    <span className="shrink-0 text-[11px] text-muted-foreground/60">
+                      {priorityLabel(task.priority)}
+                    </span>
+                    <button
+                      onClick={() => deleteTask.mutate(task.id)}
+                      disabled={!canEdit}
+                      className="shrink-0 text-[11px] font-semibold text-muted-foreground/60 transition-colors hover:text-accent"
+                      aria-label={`${t("ws.delete")} ${task.title}`}
+                    >
+                      {t("ws.del")}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Mobile tab bar */}
       <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
         {(
           [
             ["notes", "ws.tabNotes"],
+            ["goals", "ws.tabGoals"],
             ["plan", "ws.tabPlan"],
-            ["note", "ws.tabNote"],
           ] as const
         ).map(([key, label]) => (
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`py-3.5 text-xs font-semibold tracking-wide transition-colors ${
-              tab === key ? "text-accent" : "text-muted-foreground"
+            className={`py-3.5 text-xs font-semibold transition-colors ${
+              (key === "notes" ? onNotes : tab === key) ? "text-accent" : "text-muted-foreground"
             }`}
           >
             {t(label)}
@@ -610,22 +586,17 @@ function Workspace() {
         ))}
         <Link
           to="/shared"
-          className="py-3.5 text-center text-xs font-semibold tracking-wide text-muted-foreground"
+          className="py-3.5 text-center text-xs font-semibold text-muted-foreground"
         >
           {t("ws.tabShare")}
         </Link>
         <Link
           to="/profile"
-          className="py-3.5 text-center text-xs font-semibold tracking-wide text-muted-foreground"
+          className="py-3.5 text-center text-xs font-semibold text-muted-foreground"
         >
           {t("ws.tabProfile")}
         </Link>
       </nav>
-
-
     </div>
   );
-
 }
-
-
