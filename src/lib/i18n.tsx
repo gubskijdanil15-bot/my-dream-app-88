@@ -143,6 +143,16 @@ const dict = {
     "hw.rate": "Too many requests — try again in a moment",
     "hw.credits": "AI credits are used up",
 
+    "files.title": "Attachments",
+    "files.add": "Add files",
+    "files.uploading": "Uploading…",
+    "files.empty": "No files attached yet.",
+    "files.open": "Open",
+    "files.error": "Upload failed",
+    "files.tooLarge": "File is larger than 50 MB",
+    "files.hint": "Images, audio, video or any other file, up to 50 MB each.",
+    "ws.tabGoals": "Goals",
+
     "profile.title": "Profile",
     "profile.sub": "Your name, email and password.",
     "profile.tab": "Profile",
@@ -309,6 +319,16 @@ const dict = {
     "hw.failed": "Не вдалося розпізнати рукопис",
     "hw.rate": "Забагато запитів — спробуйте за хвилину",
     "hw.credits": "Кредити ШІ вичерпано",
+
+    "files.title": "Вкладення",
+    "files.add": "Додати файли",
+    "files.uploading": "Завантаження…",
+    "files.empty": "Файлів ще немає.",
+    "files.open": "Відкрити",
+    "files.error": "Не вдалося завантажити",
+    "files.tooLarge": "Файл більший за 50 МБ",
+    "files.hint": "Зображення, аудіо, відео чи будь-який інший файл, до 50 МБ кожен.",
+    "ws.tabGoals": "Цілі",
 
     "profile.title": "Профіль",
     "profile.sub": "Ваше ім'я, пошта та пароль.",
