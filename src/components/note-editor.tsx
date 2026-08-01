@@ -236,8 +236,10 @@ export function NoteEditor({ note, canEdit, saving, ownerId, onSave, onDelete }:
         contentEditable={canEdit}
         suppressContentEditableWarning
         data-placeholder={t("ws.writeItOut")}
-        className="rich-note min-h-48 w-full rounded-2xl border border-border bg-card p-4 text-base leading-relaxed focus:outline-none focus:ring-1 focus:ring-ring"
+        className="rich-note min-h-48 w-full rounded-2xl border border-border bg-card p-4 text-base leading-relaxed focus:outline-none focus:ring-1 focus:ring-ring md:min-h-[22rem]"
       />
+
+      <NoteAttachments noteId={note.id} ownerId={ownerId} canEdit={canEdit} />
     </div>
   );
 }
