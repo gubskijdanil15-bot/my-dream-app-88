@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { LanguageToggle } from "@/components/language-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NotificationSettings } from "@/components/notification-settings";
 import { useLang } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 
@@ -248,6 +249,8 @@ function ProfilePage() {
             ))}
           </div>
         </section>
+
+        <NotificationSettings />
       </main>
     </div>
   );
