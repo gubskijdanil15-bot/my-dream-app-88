@@ -104,11 +104,11 @@ export function useNotes(ownerId?: string) {
       const owner = await ownerOrSelf(ownerId);
       const { data, error } = await supabase
         .from("notes")
-        .select("id, title, body, body_html, created_at, updated_at")
+        .select("id, title, body, body_html, links, created_at, updated_at")
         .eq("user_id", owner)
         .order("updated_at", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []).map((n) => ({ ...n, links: parseLinks(n.links) }));
     },
   });
 }
@@ -133,14 +133,22 @@ export function useCreateNote(ownerId?: string) {
 export function useUpdateNote() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { id: string; title?: string; body?: string; body_html?: string }) => {
-      const { id, ...patch } = input;
+    mutationFn: async (input: {
+      id: string;
+      title?: string;
+      body?: string;
+      body_html?: string;
+      links?: ExternalLink[];
+    }) => {
+      const { id, ...rest } = input;
+      const patch = { ...rest, ...(rest.links ? { links: rest.links as unknown as Json } : {}) };
       const { error } = await supabase.from("notes").update(patch).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notes"] }),
   });
 }
+
 
 export function useDeleteNote() {
   const qc = useQueryClient();
