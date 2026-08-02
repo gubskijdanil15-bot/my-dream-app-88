@@ -7,9 +7,15 @@ import { RulerProgress } from "@/components/ruler-progress";
 import { LanguageToggle } from "@/components/language-toggle";
 import { NoteEditor } from "@/components/note-editor";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { KanbanBoard } from "@/components/kanban-board";
+import { ContentCalendar } from "@/components/content-calendar";
+import { OkrBoard } from "@/components/okr-board";
+import { NotificationBanner } from "@/components/notification-settings";
 
-import { useLang } from "@/lib/i18n";
+import { useLang, type TranslationKey } from "@/lib/i18n";
 import { useJoinedJournals } from "@/lib/journal-data";
+import { useNotificationPrefs, useTaskReminders } from "@/lib/notifications";
 import {
   todayISO,
   useCreateGoal,
@@ -19,13 +25,16 @@ import {
   useDeleteTask,
   useGoals,
   useNotes,
+  useObjectives,
   useTasks,
+  useTasksRange,
   useToggleTask,
   useUpdateGoal,
   useUpdateNote,
+  useUpdateTask,
+  type Stage,
   type Task,
 } from "@/lib/workspace-data";
-
 
 export const Route = createFileRoute("/_authenticated/workspace")({
   head: () => ({
@@ -33,16 +42,27 @@ export const Route = createFileRoute("/_authenticated/workspace")({
       { title: "Workspace — Paperweight" },
       {
         name: "description",
-        content: "Your notes, active goals and today's plan in a single quiet workspace.",
+        content:
+          "Notes, goals, OKRs, a production board and today's plan in a single quiet workspace.",
       },
       { property: "og:title", content: "Workspace — Paperweight" },
-      { property: "og:description", content: "Notes, goals and today's plan." },
+      { property: "og:description", content: "Notes, goals, OKRs and today's plan." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Workspace,
 });
 
-type Tab = "notes" | "note" | "goals" | "plan";
+type Tab = "notes" | "note" | "goals" | "okr" | "plan" | "calendar";
+type PlanView = "list" | "board";
+type Reminder = "none" | "at" | "1h" | "1d";
+
+function addDays(base: Date, days: number) {
+  const d = new Date(base);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
 
 function Workspace() {
   const navigate = useNavigate();
@@ -75,6 +95,8 @@ function Workspace() {
   const notes = useNotes(scope);
   const goals = useGoals(scope);
   const tasks = useTasks(today, scope);
+  const objectives = useObjectives(scope);
+  const boardTasks = useTasksRange(addDays(new Date(), -30), addDays(new Date(), 120), scope);
 
   const createNote = useCreateNote(scope);
   const updateNote = useUpdateNote();
@@ -82,21 +104,37 @@ function Workspace() {
   const createGoal = useCreateGoal(scope);
   const updateGoal = useUpdateGoal();
   const createTask = useCreateTask(scope);
+  const updateTask = useUpdateTask();
   const toggleTask = useToggleTask();
   const deleteTask = useDeleteTask();
+
+  const prefs = useNotificationPrefs();
+  useTaskReminders(tasks.data, !ownerId && !!prefs.data?.taskReminders);
 
   const [capture, setCapture] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("notes");
+  const [planView, setPlanView] = useState<PlanView>("list");
+  const [okrFormOpen, setOkrFormOpen] = useState(false);
 
   const [taskTitle, setTaskTitle] = useState("");
   const [taskPriority, setTaskPriority] = useState<Task["priority"]>("medium");
+  const [taskTime, setTaskTime] = useState("");
+  const [taskReminder, setTaskReminder] = useState<Reminder>("none");
+  const [taskKr, setTaskKr] = useState("");
   const [goalOpen, setGoalOpen] = useState(false);
   const [goalTitle, setGoalTitle] = useState("");
   const [goalDate, setGoalDate] = useState("");
 
+  const [pendingNote, setPendingNote] = useState<string | null>(null);
+  const [pendingTask, setPendingTask] = useState<Task | null>(null);
+  const [pendingClear, setPendingClear] = useState(false);
+
   const selected = notes.data?.find((n) => n.id === selectedId) ?? null;
   const onNotes = tab === "notes" || tab === "note";
+  const keyResults = (objectives.data ?? []).flatMap((o) =>
+    o.key_results.map((kr) => ({ ...kr, objective: o.title })),
+  );
 
   async function handleSignOut() {
     await queryClient.cancelQueries();
@@ -119,6 +157,14 @@ function Workspace() {
     }
   }
 
+  function reminderAt(): string | null {
+    if (taskReminder === "none") return null;
+    const base = new Date(`${today}T${taskTime || "09:00"}:00`);
+    if (taskReminder === "1h") base.setHours(base.getHours() - 1);
+    if (taskReminder === "1d") base.setDate(base.getDate() - 1);
+    return base.toISOString();
+  }
+
   async function submitTask(e: React.FormEvent) {
     e.preventDefault();
     const title = taskTitle.trim();
@@ -128,8 +174,13 @@ function Workspace() {
         title: title.slice(0, 200),
         priority: taskPriority,
         due_date: today,
+        due_time: taskTime || null,
+        remind_at: reminderAt(),
+        key_result_id: taskKr || null,
       });
       setTaskTitle("");
+      setTaskTime("");
+      setTaskReminder("none");
     } catch {
       toast.error(t("ws.errTask"));
     }
@@ -155,8 +206,16 @@ function Workspace() {
   const priorityLabel = (p: Task["priority"]) =>
     t(p === "high" ? "priority.high" : p === "low" ? "priority.low" : "priority.medium");
 
-  const headerTitle =
-    tab === "goals" ? t("ws.activeGoals") : tab === "plan" ? t("ws.todayList") : t("ws.notes");
+  const headerTitle: TranslationKey =
+    tab === "goals"
+      ? "ws.activeGoals"
+      : tab === "plan"
+        ? "ws.todayList"
+        : tab === "okr"
+          ? "okr.title"
+          : tab === "calendar"
+            ? "cal.title"
+            : "ws.notes";
 
   const notebookSwitcher = (joined.data?.length ?? 0) > 0 && (
     <select
@@ -178,19 +237,23 @@ function Workspace() {
     </select>
   );
 
-  const desktopTab = (key: Tab, label: string, count: number) => (
+  const tabButton = (key: Tab, label: string, count?: number) => (
     <button
       key={key}
       onClick={() => setTab(key)}
-      className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
+      className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-semibold transition-colors ${
         (key === "notes" ? onNotes : tab === key)
           ? "bg-foreground text-background"
           : "text-muted-foreground hover:text-accent"
       }`}
     >
-      {label} <span className="opacity-60">{count}</span>
+      {label}
+      {count !== undefined && <span className="ml-1 opacity-60">{count}</span>}
     </button>
   );
+
+  const field =
+    "min-w-0 rounded-xl border border-border bg-card px-3 py-2.5 text-base focus:outline-none focus:ring-1 focus:ring-ring sm:text-sm";
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground md:flex-row">
@@ -244,7 +307,7 @@ function Workspace() {
         <header className="grid shrink-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-3 border-b border-border px-4 py-4 sm:px-8 sm:py-5">
           <div className="min-w-0">
             <h1 className="truncate text-xl font-extrabold tracking-tight sm:text-2xl">
-              {headerTitle}
+              {t(headerTitle)}
             </h1>
             <p className="truncate text-xs text-muted-foreground sm:text-sm">
               {longDate(new Date())}
@@ -265,6 +328,14 @@ function Workspace() {
                 {goalOpen ? t("ws.close") : t("ws.newGoal")}
               </button>
             )}
+            {canEdit && tab === "okr" && (
+              <button
+                onClick={() => setOkrFormOpen((v) => !v)}
+                className="rounded-full bg-foreground px-4 py-2 text-xs font-bold text-background shadow-sm transition-colors hover:bg-accent active:scale-95"
+              >
+                {okrFormOpen ? t("ws.close") : t("okr.new")}
+              </button>
+            )}
             {tab === "note" && (
               <button
                 onClick={() => setTab("notes")}
@@ -276,18 +347,22 @@ function Workspace() {
           </div>
         </header>
 
-        {/* Desktop / tablet tabs */}
-        <div className="hidden shrink-0 items-center gap-2 border-b border-border px-8 py-2.5 md:flex">
-          {desktopTab("notes", t("ws.tabNotes"), notes.data?.length ?? 0)}
-          {desktopTab("goals", t("ws.tabGoals"), goals.data?.length ?? 0)}
-          {desktopTab("plan", t("ws.tabPlan"), tasks.data?.filter((x) => !x.done).length ?? 0)}
+        {/* Tabs — scrollable on tablet, wrapped on desktop */}
+        <div className="hidden shrink-0 items-center gap-2 overflow-x-auto border-b border-border px-8 py-2.5 md:flex">
+          {tabButton("notes", t("ws.tabNotes"), notes.data?.length ?? 0)}
+          {tabButton("goals", t("ws.tabGoals"), goals.data?.length ?? 0)}
+          {tabButton("okr", t("ws.tabOkr"), objectives.data?.length ?? 0)}
+          {tabButton("plan", t("ws.tabPlan"), tasks.data?.filter((x) => !x.done).length ?? 0)}
+          {tabButton("calendar", t("ws.tabCalendar"))}
         </div>
+
+        <NotificationBanner />
 
         {/* NOTES */}
         {onNotes && (
           <div className="flex min-h-0 flex-1 overflow-hidden">
             <section
-              className={`min-w-0 flex-col border-border bg-foreground/[0.01] md:flex md:w-[340px] md:shrink-0 md:border-r ${
+              className={`min-w-0 flex-col border-border bg-foreground/[0.01] md:flex md:w-[300px] md:shrink-0 md:border-r lg:w-[340px] ${
                 tab === "note" ? "hidden" : "flex w-full flex-1"
               }`}
             >
@@ -347,9 +422,7 @@ function Workspace() {
                 tab === "note" ? "block" : "hidden"
               }`}
             >
-              {!selected && (
-                <p className="text-xs text-muted-foreground">{t("ws.selectNote")}</p>
-              )}
+              {!selected && <p className="text-xs text-muted-foreground">{t("ws.selectNote")}</p>}
               {selected && (
                 <NoteEditor
                   key={selected.id}
@@ -363,11 +436,8 @@ function Workspace() {
                       { onSuccess: () => toast.success(t("ws.noteSaved")) },
                     )
                   }
-                  onDelete={() => {
-                    deleteNote.mutate(selected.id);
-                    setSelectedId(null);
-                    setTab("notes");
-                  }}
+                  onLinksChange={(links) => updateNote.mutate({ id: selected.id, links })}
+                  onDelete={() => setPendingNote(selected.id)}
                 />
               )}
             </div>
@@ -377,13 +447,13 @@ function Workspace() {
         {/* GOALS */}
         {tab === "goals" && (
           <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-8 md:pb-10">
-            <div className="max-w-3xl">
+            <div className="mx-auto max-w-6xl">
               {goalOpen && canEdit && (
                 <form
                   onSubmit={submitGoal}
-                  className="animate-entry mb-8 flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4"
+                  className="animate-entry mb-8 grid gap-3 rounded-2xl border border-border bg-card p-4 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end"
                 >
-                  <div className="min-w-[180px] flex-1 space-y-1">
+                  <div className="min-w-0 space-y-1">
                     <label className="label-mono block" htmlFor="goal-title">
                       {t("ws.goal")}
                     </label>
@@ -392,7 +462,7 @@ function Workspace() {
                       value={goalTitle}
                       onChange={(e) => setGoalTitle(e.target.value)}
                       maxLength={160}
-                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-base focus:outline-none focus:ring-1 focus:ring-ring"
+                      className={`${field} w-full bg-background`}
                     />
                   </div>
                   <div className="space-y-1">
@@ -404,12 +474,12 @@ function Workspace() {
                       type="date"
                       value={goalDate}
                       onChange={(e) => setGoalDate(e.target.value)}
-                      className="rounded-lg border border-border bg-background px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                      className={`${field} w-full bg-background`}
                     />
                   </div>
                   <button
                     type="submit"
-                    className="rounded-full bg-accent px-4 py-2 text-xs font-bold text-accent-foreground"
+                    className="rounded-full bg-accent px-5 py-2.5 text-xs font-bold text-accent-foreground"
                   >
                     {t("ws.add")}
                   </button>
@@ -428,12 +498,15 @@ function Workspace() {
               {goals.data?.length === 0 && (
                 <p className="text-xs text-muted-foreground">{t("ws.emptyGoals")}</p>
               )}
-              <div className="grid gap-8">
+              <div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
                 {goals.data?.map((goal) => (
-                  <div key={goal.id} className="animate-entry">
+                  <div
+                    key={goal.id}
+                    className="animate-entry rounded-2xl border border-border bg-card p-5"
+                  >
                     <div className="mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
                       <div className="min-w-0">
-                        <h4 className="truncate text-sm font-bold">{goal.title}</h4>
+                        <h4 className="break-words text-sm font-bold">{goal.title}</h4>
                         <p className="text-[11px] text-muted-foreground">
                           {goal.target_date
                             ? `${t("ws.target")}: ${goal.target_date}`
@@ -441,40 +514,43 @@ function Workspace() {
                         </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-                        <button
-                          onClick={() =>
-                            updateGoal.mutate({
-                              id: goal.id,
-                              progress: Math.max(0, goal.progress - 10),
-                            })
-                          }
-                          className="size-8 rounded-full border border-border text-xs hover:border-accent hover:text-accent"
-                          aria-label={`− ${goal.title}`}
-                          disabled={!canEdit}
-                        >
-                          −
-                        </button>
+                        {canEdit && (
+                          <button
+                            onClick={() =>
+                              updateGoal.mutate({
+                                id: goal.id,
+                                progress: Math.max(0, goal.progress - 10),
+                              })
+                            }
+                            className="size-8 rounded-full border border-border text-xs hover:border-accent hover:text-accent"
+                            aria-label={`− ${goal.title}`}
+                          >
+                            −
+                          </button>
+                        )}
                         <span className="w-10 text-right text-xs">{goal.progress}%</span>
-                        <button
-                          onClick={() =>
-                            updateGoal.mutate({
-                              id: goal.id,
-                              progress: Math.min(100, goal.progress + 10),
-                            })
-                          }
-                          className="size-8 rounded-full border border-border text-xs hover:border-accent hover:text-accent"
-                          aria-label={`+ ${goal.title}`}
-                          disabled={!canEdit}
-                        >
-                          +
-                        </button>
-                        <button
-                          onClick={() => updateGoal.mutate({ id: goal.id, archived: true })}
-                          disabled={!canEdit}
-                          className="text-[11px] font-semibold text-muted-foreground hover:text-accent"
-                        >
-                          {t("ws.done")}
-                        </button>
+                        {canEdit && (
+                          <>
+                            <button
+                              onClick={() =>
+                                updateGoal.mutate({
+                                  id: goal.id,
+                                  progress: Math.min(100, goal.progress + 10),
+                                })
+                              }
+                              className="size-8 rounded-full border border-border text-xs hover:border-accent hover:text-accent"
+                              aria-label={`+ ${goal.title}`}
+                            >
+                              +
+                            </button>
+                            <button
+                              onClick={() => updateGoal.mutate({ id: goal.id, archived: true })}
+                              className="text-[11px] font-semibold text-muted-foreground hover:text-accent"
+                            >
+                              {t("ws.done")}
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                     <RulerProgress value={goal.progress} />
@@ -485,81 +561,209 @@ function Workspace() {
           </div>
         )}
 
+        {/* OKR */}
+        {tab === "okr" && (
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-8 md:pb-10">
+            <div className="mx-auto max-w-7xl">
+              {!okrFormOpen && canEdit && (
+                <button
+                  onClick={() => setOkrFormOpen(true)}
+                  className="mb-6 rounded-full border border-border px-4 py-2 text-xs font-bold hover:border-accent hover:text-accent md:hidden"
+                >
+                  {t("okr.new")}
+                </button>
+              )}
+              <OkrBoard
+                ownerId={scope}
+                canEdit={canEdit}
+                formOpen={okrFormOpen}
+                onCloseForm={() => setOkrFormOpen(false)}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* CALENDAR */}
+        {tab === "calendar" && (
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-8 md:pb-10">
+            <div className="mx-auto max-w-6xl">
+              <ContentCalendar ownerId={scope} />
+            </div>
+          </div>
+        )}
+
         {/* PLAN */}
         {tab === "plan" && (
           <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-8 md:pb-10">
-            <div className="max-w-3xl">
-              {canEdit && (
-                <form onSubmit={submitTask} className="mb-6 flex flex-wrap gap-2">
-                  <input
-                    value={taskTitle}
-                    onChange={(e) => setTaskTitle(e.target.value)}
-                    placeholder={t("ws.addTask")}
-                    maxLength={200}
-                    className="w-full min-w-0 flex-1 rounded-xl border border-border bg-card px-3 py-2.5 text-base placeholder:text-muted-foreground/60 focus:outline-none focus:ring-1 focus:ring-ring sm:w-auto"
-                  />
-                  <select
-                    value={taskPriority}
-                    onChange={(e) => setTaskPriority(e.target.value as Task["priority"])}
-                    className="flex-1 rounded-xl border border-border bg-card px-2 py-2 text-xs focus:outline-none sm:flex-none"
-                  >
-                    <option value="high">{t("priority.high")}</option>
-                    <option value="medium">{t("priority.medium")}</option>
-                    <option value="low">{t("priority.low")}</option>
-                  </select>
+            <div className="mx-auto max-w-6xl">
+              <div className="mb-5 flex flex-wrap items-center gap-2">
+                <div className="inline-flex rounded-full border border-border p-1">
+                  {(
+                    [
+                      ["list", "view.list"],
+                      ["board", "view.board"],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <button
+                      key={value}
+                      onClick={() => setPlanView(value)}
+                      aria-pressed={planView === value}
+                      className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
+                        planView === value
+                          ? "bg-foreground text-background"
+                          : "text-muted-foreground hover:text-accent"
+                      }`}
+                    >
+                      {t(label)}
+                    </button>
+                  ))}
+                </div>
+                {canEdit && planView === "list" && (tasks.data?.some((x) => x.done) ?? false) && (
                   <button
-                    type="submit"
-                    className="flex-1 rounded-xl bg-foreground px-4 py-2.5 text-xs font-bold text-background hover:bg-accent sm:flex-none"
+                    onClick={() => setPendingClear(true)}
+                    className="ml-auto rounded-full border border-border px-4 py-2 text-[11px] font-bold hover:border-destructive hover:text-destructive"
                   >
-                    {t("ws.add")}
+                    {t("ws.clearDone")}
                   </button>
-                </form>
-              )}
-
-              <div className="space-y-1">
-                {tasks.data?.length === 0 && (
-                  <p className="py-3 text-xs text-muted-foreground">{t("ws.emptyTasks")}</p>
                 )}
-                {tasks.data?.map((task) => (
-                  <div
-                    key={task.id}
-                    className="group flex items-center gap-3 border-b border-border/40 py-3"
-                  >
-                    <button
-                      onClick={() => toggleTask.mutate({ id: task.id, done: !task.done })}
-                      disabled={!canEdit}
-                      aria-label={task.title}
-                      className={`flex size-6 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
-                        task.done ? "border-accent bg-accent" : "border-border hover:border-accent"
-                      }`}
-                    >
-                      <span
-                        className={`size-1.5 rounded-full bg-background ${
-                          task.done ? "opacity-100" : "opacity-0"
-                        }`}
-                      />
-                    </button>
-                    <span
-                      className={`min-w-0 flex-1 break-words text-sm transition-all ${
-                        task.done ? "text-muted-foreground line-through" : ""
-                      }`}
-                    >
-                      {task.title}
-                    </span>
-                    <span className="shrink-0 text-[11px] text-muted-foreground/60">
-                      {priorityLabel(task.priority)}
-                    </span>
-                    <button
-                      onClick={() => deleteTask.mutate(task.id)}
-                      disabled={!canEdit}
-                      className="shrink-0 text-[11px] font-semibold text-muted-foreground/60 transition-colors hover:text-accent"
-                      aria-label={`${t("ws.delete")} ${task.title}`}
-                    >
-                      {t("ws.del")}
-                    </button>
-                  </div>
-                ))}
               </div>
+
+              {planView === "board" ? (
+                <KanbanBoard
+                  tasks={boardTasks.data ?? []}
+                  canEdit={canEdit}
+                  onMove={(id, stage: Stage) => updateTask.mutate({ id, stage })}
+                />
+              ) : (
+                <>
+                  {canEdit && (
+                    <form
+                      onSubmit={submitTask}
+                      className="mb-6 grid gap-2 rounded-2xl border border-border bg-card/60 p-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_7rem_minmax(0,8rem)_minmax(0,10rem)_auto]"
+                    >
+                      <input
+                        value={taskTitle}
+                        onChange={(e) => setTaskTitle(e.target.value)}
+                        placeholder={t("ws.addTask")}
+                        maxLength={200}
+                        className={`${field} w-full sm:col-span-2 lg:col-span-1`}
+                      />
+                      <input
+                        type="time"
+                        value={taskTime}
+                        onChange={(e) => setTaskTime(e.target.value)}
+                        aria-label={t("task.time")}
+                        className={`${field} w-full`}
+                      />
+                      <select
+                        value={taskPriority}
+                        onChange={(e) => setTaskPriority(e.target.value as Task["priority"])}
+                        aria-label={t("priority.medium")}
+                        className={`${field} w-full`}
+                      >
+                        <option value="high">{t("priority.high")}</option>
+                        <option value="medium">{t("priority.medium")}</option>
+                        <option value="low">{t("priority.low")}</option>
+                      </select>
+                      <select
+                        value={taskReminder}
+                        onChange={(e) => setTaskReminder(e.target.value as Reminder)}
+                        aria-label={t("task.remind")}
+                        className={`${field} w-full`}
+                      >
+                        <option value="none">{t("remind.none")}</option>
+                        <option value="at">{t("remind.atTime")}</option>
+                        <option value="1h">{t("remind.1h")}</option>
+                        <option value="1d">{t("remind.1d")}</option>
+                      </select>
+                      {keyResults.length > 0 && (
+                        <select
+                          value={taskKr}
+                          onChange={(e) => setTaskKr(e.target.value)}
+                          aria-label={t("task.linkKr")}
+                          className={`${field} w-full sm:col-span-2 lg:col-span-4`}
+                        >
+                          <option value="">
+                            {t("task.linkKr")}: {t("okr.none")}
+                          </option>
+                          {keyResults.map((kr) => (
+                            <option key={kr.id} value={kr.id}>
+                              {kr.objective} — {kr.title}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      <button
+                        type="submit"
+                        className="w-full rounded-xl bg-foreground px-5 py-2.5 text-xs font-bold text-background hover:bg-accent sm:col-span-2 lg:col-span-1 lg:w-auto"
+                      >
+                        {t("ws.add")}
+                      </button>
+                    </form>
+                  )}
+
+                  <div className="space-y-1">
+                    {tasks.data?.length === 0 && (
+                      <p className="py-3 text-xs text-muted-foreground">{t("ws.emptyTasks")}</p>
+                    )}
+                    {tasks.data?.map((task) => {
+                      const kr = keyResults.find((k) => k.id === task.key_result_id);
+                      return (
+                        <div
+                          key={task.id}
+                          className="group flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border/40 py-3"
+                        >
+                          <button
+                            onClick={() => toggleTask.mutate({ id: task.id, done: !task.done })}
+                            disabled={!canEdit}
+                            aria-label={task.title}
+                            className={`flex size-6 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
+                              task.done
+                                ? "border-accent bg-accent"
+                                : "border-border hover:border-accent"
+                            }`}
+                          >
+                            <span
+                              className={`size-1.5 rounded-full bg-background ${
+                                task.done ? "opacity-100" : "opacity-0"
+                              }`}
+                            />
+                          </button>
+                          <span
+                            className={`min-w-0 flex-1 break-words text-sm transition-all ${
+                              task.done ? "text-muted-foreground line-through" : ""
+                            }`}
+                          >
+                            {task.title}
+                          </span>
+                          {task.due_time && (
+                            <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px]">
+                              {task.due_time.slice(0, 5)}
+                            </span>
+                          )}
+                          {kr && (
+                            <span className="max-w-full truncate rounded-full bg-accent/10 px-2 py-0.5 text-[11px] text-accent">
+                              {kr.title}
+                            </span>
+                          )}
+                          <span className="shrink-0 text-[11px] text-muted-foreground/60">
+                            {priorityLabel(task.priority)}
+                          </span>
+                          {canEdit && (
+                            <button
+                              onClick={() => setPendingTask(task)}
+                              className="shrink-0 text-[11px] font-semibold text-muted-foreground/60 transition-colors hover:text-destructive"
+                              aria-label={`${t("ws.delete")} ${task.title}`}
+                            >
+                              {t("ws.del")}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -571,32 +775,49 @@ function Workspace() {
           [
             ["notes", "ws.tabNotes"],
             ["goals", "ws.tabGoals"],
+            ["okr", "ws.tabOkr"],
             ["plan", "ws.tabPlan"],
+            ["calendar", "ws.tabCalendar"],
           ] as const
         ).map(([key, label]) => (
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`py-3.5 text-xs font-semibold transition-colors ${
+            className={`py-3.5 text-[11px] font-semibold transition-colors ${
               (key === "notes" ? onNotes : tab === key) ? "text-accent" : "text-muted-foreground"
             }`}
           >
             {t(label)}
           </button>
         ))}
-        <Link
-          to="/shared"
-          className="py-3.5 text-center text-xs font-semibold text-muted-foreground"
-        >
-          {t("ws.tabShare")}
-        </Link>
-        <Link
-          to="/profile"
-          className="py-3.5 text-center text-xs font-semibold text-muted-foreground"
-        >
-          {t("ws.tabProfile")}
-        </Link>
       </nav>
+
+      <ConfirmDialog
+        open={!!pendingNote}
+        messageKey="confirm.deleteNote"
+        onCancel={() => setPendingNote(null)}
+        onConfirm={() => {
+          if (!pendingNote) return;
+          deleteNote.mutate(pendingNote);
+          setSelectedId(null);
+          setTab("notes");
+        }}
+      />
+      <ConfirmDialog
+        open={!!pendingTask}
+        messageKey="confirm.deleteTask"
+        detail={pendingTask?.title}
+        onCancel={() => setPendingTask(null)}
+        onConfirm={() => pendingTask && deleteTask.mutate(pendingTask.id)}
+      />
+      <ConfirmDialog
+        open={pendingClear}
+        messageKey="confirm.clearDone"
+        onCancel={() => setPendingClear(false)}
+        onConfirm={() => {
+          for (const task of tasks.data ?? []) if (task.done) deleteTask.mutate(task.id);
+        }}
+      />
     </div>
   );
 }

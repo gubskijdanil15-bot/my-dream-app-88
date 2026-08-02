@@ -2,8 +2,9 @@ import DOMPurify from "dompurify";
 import { useEffect, useRef, useState } from "react";
 import { HandwritingPad } from "@/components/handwriting-pad";
 import { NoteAttachments } from "@/components/note-attachments";
+import { LinkList } from "@/components/link-list";
 import { useLang } from "@/lib/i18n";
-import type { Note } from "@/lib/workspace-data";
+import type { ExternalLink, Note } from "@/lib/workspace-data";
 
 
 const SANITIZE_CONFIG = {
@@ -53,10 +54,19 @@ type Props = {
   saving?: boolean;
   ownerId?: string;
   onSave: (input: { title: string; body_html: string; body: string }) => void;
+  onLinksChange?: (links: ExternalLink[]) => void;
   onDelete: () => void;
 };
 
-export function NoteEditor({ note, canEdit, saving, ownerId, onSave, onDelete }: Props) {
+export function NoteEditor({
+  note,
+  canEdit,
+  saving,
+  ownerId,
+  onSave,
+  onLinksChange,
+  onDelete,
+}: Props) {
   const { t } = useLang();
   const bodyRef = useRef<HTMLDivElement>(null);
   const [title, setTitle] = useState(note.title);
@@ -239,6 +249,10 @@ export function NoteEditor({ note, canEdit, saving, ownerId, onSave, onDelete }:
         data-placeholder={t("ws.writeItOut")}
         className="rich-note min-h-48 w-full rounded-2xl border border-border bg-card p-4 text-base leading-relaxed focus:outline-none focus:ring-1 focus:ring-ring md:min-h-[22rem]"
       />
+
+      {onLinksChange && (
+        <LinkList links={note.links ?? []} canEdit={canEdit} onChange={onLinksChange} />
+      )}
 
       <NoteAttachments noteId={note.id} ownerId={ownerId} canEdit={canEdit} />
     </div>
