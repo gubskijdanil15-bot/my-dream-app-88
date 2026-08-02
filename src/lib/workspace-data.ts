@@ -1,11 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export type ExternalLink = { label: string; url: string };
+
+export function parseLinks(value: unknown): ExternalLink[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((l): l is ExternalLink =>
+      !!l && typeof l === "object" && typeof (l as ExternalLink).url === "string",
+    )
+    .map((l) => ({ label: String(l.label ?? l.url).slice(0, 80), url: l.url }));
+}
+
 export type Note = {
   id: string;
   title: string;
   body: string;
   body_html: string;
+  links: ExternalLink[];
   created_at: string;
   updated_at: string;
 };
@@ -19,15 +31,59 @@ export type Goal = {
   archived: boolean;
 };
 
+export const STAGES = [
+  "idea",
+  "script",
+  "production",
+  "post",
+  "published",
+] as const;
+export type Stage = (typeof STAGES)[number];
+
 export type Task = {
   id: string;
   title: string;
   priority: "low" | "medium" | "high";
   done: boolean;
   due_date: string;
+  due_time: string | null;
+  remind_at: string | null;
+  stage: Stage;
+  key_result_id: string | null;
+  links: ExternalLink[];
 };
 
+export type KeyResult = {
+  id: string;
+  objective_id: string;
+  title: string;
+  target_value: number;
+  current_value: number;
+  unit: string;
+};
+
+export type Objective = {
+  id: string;
+  title: string;
+  description: string | null;
+  timeframe: string | null;
+  category: string | null;
+  archived: boolean;
+  key_results: KeyResult[];
+};
+
+export const krProgress = (kr: KeyResult) =>
+  kr.target_value > 0
+    ? Math.max(0, Math.min(100, Math.round((kr.current_value / kr.target_value) * 100)))
+    : 0;
+
+export const objectiveProgress = (o: Objective) =>
+  o.key_results.length === 0
+    ? 0
+    : Math.round(o.key_results.reduce((sum, kr) => sum + krProgress(kr), 0) / o.key_results.length);
+
 export const todayISO = () => new Date().toISOString().slice(0, 10);
+
 
 export async function currentUserId() {
   const { data } = await supabase.auth.getUser();
