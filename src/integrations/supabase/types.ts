@@ -125,6 +125,50 @@ export type Database = {
         }
         Relationships: []
       }
+      key_results: {
+        Row: {
+          created_at: string
+          current_value: number
+          id: string
+          objective_id: string
+          target_value: number
+          title: string
+          unit: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_value?: number
+          id?: string
+          objective_id: string
+          target_value?: number
+          title: string
+          unit?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_value?: number
+          id?: string
+          objective_id?: string
+          target_value?: number
+          title?: string
+          unit?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "key_results_objective_id_fkey"
+            columns: ["objective_id"]
+            isOneToOne: false
+            referencedRelation: "objectives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       note_attachments: {
         Row: {
           created_at: string
@@ -175,6 +219,7 @@ export type Database = {
           body_html: string
           created_at: string
           id: string
+          links: Json
           title: string
           updated_at: string
           user_id: string
@@ -184,6 +229,7 @@ export type Database = {
           body_html?: string
           created_at?: string
           id?: string
+          links?: Json
           title?: string
           updated_at?: string
           user_id: string
@@ -193,6 +239,43 @@ export type Database = {
           body_html?: string
           created_at?: string
           id?: string
+          links?: Json
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      objectives: {
+        Row: {
+          archived: boolean
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          timeframe: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived?: boolean
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          timeframe?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived?: boolean
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          timeframe?: string | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -204,16 +287,19 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          notification_prefs: Json
         }
         Insert: {
           created_at?: string
           display_name?: string | null
           id: string
+          notification_prefs?: Json
         }
         Update: {
           created_at?: string
           display_name?: string | null
           id?: string
+          notification_prefs?: Json
         }
         Relationships: []
       }
@@ -222,9 +308,14 @@ export type Database = {
           created_at: string
           done: boolean
           due_date: string
+          due_time: string | null
           goal_id: string | null
           id: string
+          key_result_id: string | null
+          links: Json
           priority: string
+          remind_at: string | null
+          stage: string
           title: string
           updated_at: string
           user_id: string
@@ -233,9 +324,14 @@ export type Database = {
           created_at?: string
           done?: boolean
           due_date?: string
+          due_time?: string | null
           goal_id?: string | null
           id?: string
+          key_result_id?: string | null
+          links?: Json
           priority?: string
+          remind_at?: string | null
+          stage?: string
           title: string
           updated_at?: string
           user_id: string
@@ -244,9 +340,14 @@ export type Database = {
           created_at?: string
           done?: boolean
           due_date?: string
+          due_time?: string | null
           goal_id?: string | null
           id?: string
+          key_result_id?: string | null
+          links?: Json
           priority?: string
+          remind_at?: string | null
+          stage?: string
           title?: string
           updated_at?: string
           user_id?: string
@@ -257,6 +358,13 @@ export type Database = {
             columns: ["goal_id"]
             isOneToOne: false
             referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_key_result_id_fkey"
+            columns: ["key_result_id"]
+            isOneToOne: false
+            referencedRelation: "key_results"
             referencedColumns: ["id"]
           },
         ]
