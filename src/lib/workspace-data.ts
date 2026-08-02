@@ -317,7 +317,10 @@ export function useToggleTask() {
         .eq("id", input.id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["tasks-range"] });
+    },
   });
 }
 
