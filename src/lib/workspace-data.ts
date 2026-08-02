@@ -207,6 +207,22 @@ export function useUpdateGoal() {
 
 /* ---------------- tasks ---------------- */
 
+const TASK_COLUMNS =
+  "id, title, priority, done, due_date, due_time, remind_at, stage, key_result_id, links";
+
+const mapTask = (row: Record<string, unknown>): Task => ({
+  id: row['id'] as string,
+  title: row['title'] as string,
+  priority: row['priority'] as Task["priority"],
+  done: row['done'] as boolean,
+  due_date: row['due_date'] as string,
+  due_time: (row['due_time'] as string | null) ?? null,
+  remind_at: (row['remind_at'] as string | null) ?? null,
+  stage: ((row['stage'] as Stage) ?? "idea") as Stage,
+  key_result_id: (row['key_result_id'] as string | null) ?? null,
+  links: parseLinks(row['links']),
+});
+
 export function useTasks(due: string, ownerId?: string) {
   return useQuery({
     queryKey: ["tasks", due, ownerId ?? "me"],
@@ -214,12 +230,32 @@ export function useTasks(due: string, ownerId?: string) {
       const owner = await ownerOrSelf(ownerId);
       const { data, error } = await supabase
         .from("tasks")
-        .select("id, title, priority, done, due_date")
+        .select(TASK_COLUMNS)
         .eq("user_id", owner)
         .eq("due_date", due)
+        .order("due_time", { ascending: true, nullsFirst: true })
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as Task[];
+      return (data ?? []).map(mapTask);
+    },
+  });
+}
+
+/** All tasks in a date range — used by the Kanban board and content calendar. */
+export function useTasksRange(from: string, to: string, ownerId?: string) {
+  return useQuery({
+    queryKey: ["tasks-range", from, to, ownerId ?? "me"],
+    queryFn: async (): Promise<Task[]> => {
+      const owner = await ownerOrSelf(ownerId);
+      const { data, error } = await supabase
+        .from("tasks")
+        .select(TASK_COLUMNS)
+        .eq("user_id", owner)
+        .gte("due_date", from)
+        .lte("due_date", to)
+        .order("due_date", { ascending: true });
+      if (error) throw error;
+      return (data ?? []).map(mapTask);
     },
   });
 }
@@ -227,7 +263,15 @@ export function useTasks(due: string, ownerId?: string) {
 export function useCreateTask(ownerId?: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { title: string; priority: Task["priority"]; due_date: string }) => {
+    mutationFn: async (input: {
+      title: string;
+      priority: Task["priority"];
+      due_date: string;
+      due_time?: string | null;
+      remind_at?: string | null;
+      key_result_id?: string | null;
+      stage?: Stage;
+    }) => {
       const user_id = await ownerOrSelf(ownerId);
       const { error } = await supabase.from("tasks").insert({ ...input, user_id });
       if (error) throw error;
@@ -235,6 +279,33 @@ export function useCreateTask(ownerId?: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }),
   });
 }
+
+export function useUpdateTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      title?: string;
+      priority?: Task["priority"];
+      due_date?: string;
+      due_time?: string | null;
+      remind_at?: string | null;
+      stage?: Stage;
+      key_result_id?: string | null;
+      links?: ExternalLink[];
+    }) => {
+      const { id, ...rest } = input;
+      const patch = { ...rest, ...(rest.links ? { links: rest.links as unknown as Json } : {}) };
+      const { error } = await supabase.from("tasks").update(patch).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["tasks-range"] });
+    },
+  });
+}
+
 
 export function useToggleTask() {
   const qc = useQueryClient();
