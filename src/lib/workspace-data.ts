@@ -331,6 +331,118 @@ export function useDeleteTask() {
       const { error } = await supabase.from("tasks").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["tasks-range"] });
+    },
   });
 }
+
+/* ---------------- OKRs ---------------- */
+
+export function useObjectives(ownerId?: string) {
+  return useQuery({
+    queryKey: ["objectives", ownerId ?? "me"],
+    queryFn: async (): Promise<Objective[]> => {
+      const owner = await ownerOrSelf(ownerId);
+      const { data, error } = await supabase
+        .from("objectives")
+        .select("id, title, description, timeframe, category, archived")
+        .eq("user_id", owner)
+        .eq("archived", false)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const objectives = data ?? [];
+      if (objectives.length === 0) return [];
+      const { data: krs, error: krError } = await supabase
+        .from("key_results")
+        .select("id, objective_id, title, target_value, current_value, unit")
+        .in(
+          "objective_id",
+          objectives.map((o) => o.id),
+        )
+        .order("created_at", { ascending: true });
+      if (krError) throw krError;
+      return objectives.map((o) => ({
+        ...o,
+        key_results: (krs ?? [])
+          .filter((k) => k.objective_id === o.id)
+          .map((k) => ({
+            ...k,
+            target_value: Number(k.target_value),
+            current_value: Number(k.current_value),
+          })),
+      }));
+    },
+  });
+}
+
+export function useCreateObjective(ownerId?: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      title: string;
+      description: string | null;
+      timeframe: string | null;
+      category: string | null;
+    }) => {
+      const user_id = await ownerOrSelf(ownerId);
+      const { error } = await supabase.from("objectives").insert({ ...input, user_id });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["objectives"] }),
+  });
+}
+
+export function useDeleteObjective() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("objectives").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["objectives"] }),
+  });
+}
+
+export function useCreateKeyResult(ownerId?: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      objective_id: string;
+      title: string;
+      target_value: number;
+      current_value: number;
+      unit: string;
+    }) => {
+      const user_id = await ownerOrSelf(ownerId);
+      const { error } = await supabase.from("key_results").insert({ ...input, user_id });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["objectives"] }),
+  });
+}
+
+export function useUpdateKeyResult() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string; current_value?: number; target_value?: number }) => {
+      const { id, ...patch } = input;
+      const { error } = await supabase.from("key_results").update(patch).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["objectives"] }),
+  });
+}
+
+export function useDeleteKeyResult() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("key_results").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["objectives"] }),
+  });
+}
+
