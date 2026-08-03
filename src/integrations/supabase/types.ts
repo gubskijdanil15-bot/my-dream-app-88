@@ -44,13 +44,51 @@ export type Database = {
         }
         Relationships: []
       }
+      equipment: {
+        Row: {
+          assigned_to: string | null
+          category: string
+          created_at: string
+          id: string
+          name: string
+          owner_note: string | null
+          packed: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          name: string
+          owner_note?: string | null
+          packed?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          name?: string
+          owner_note?: string | null
+          packed?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       goals: {
         Row: {
           archived: boolean
+          completed_at: string | null
           created_at: string
           detail: string | null
           id: string
           progress: number
+          status: string
           target_date: string | null
           title: string
           updated_at: string
@@ -58,10 +96,12 @@ export type Database = {
         }
         Insert: {
           archived?: boolean
+          completed_at?: string | null
           created_at?: string
           detail?: string | null
           id?: string
           progress?: number
+          status?: string
           target_date?: string | null
           title: string
           updated_at?: string
@@ -69,11 +109,81 @@ export type Database = {
         }
         Update: {
           archived?: boolean
+          completed_at?: string | null
           created_at?: string
           detail?: string | null
           id?: string
           progress?: number
+          status?: string
           target_date?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      idea_votes: {
+        Row: {
+          created_at: string
+          id: string
+          idea_id: string
+          owner_id: string
+          voter_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          idea_id: string
+          owner_id: string
+          voter_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          idea_id?: string
+          owner_id?: string
+          voter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "idea_votes_idea_id_fkey"
+            columns: ["idea_id"]
+            isOneToOne: false
+            referencedRelation: "ideas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ideas: {
+        Row: {
+          created_at: string
+          created_by: string
+          detail: string | null
+          id: string
+          status: string
+          tag: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          detail?: string | null
+          id?: string
+          status?: string
+          tag?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          detail?: string | null
+          id?: string
+          status?: string
+          tag?: string
           title?: string
           updated_at?: string
           user_id?: string
@@ -169,6 +279,39 @@ export type Database = {
           },
         ]
       }
+      locations: {
+        Row: {
+          address: string | null
+          contact: string | null
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          contact?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          contact?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       note_attachments: {
         Row: {
           created_at: string
@@ -250,9 +393,11 @@ export type Database = {
         Row: {
           archived: boolean
           category: string | null
+          completed_at: string | null
           created_at: string
           description: string | null
           id: string
+          status: string
           timeframe: string | null
           title: string
           updated_at: string
@@ -261,9 +406,11 @@ export type Database = {
         Insert: {
           archived?: boolean
           category?: string | null
+          completed_at?: string | null
           created_at?: string
           description?: string | null
           id?: string
+          status?: string
           timeframe?: string | null
           title: string
           updated_at?: string
@@ -272,9 +419,11 @@ export type Database = {
         Update: {
           archived?: boolean
           category?: string | null
+          completed_at?: string | null
           created_at?: string
           description?: string | null
           id?: string
+          status?: string
           timeframe?: string | null
           title?: string
           updated_at?: string
@@ -305,6 +454,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          assigned_role: string | null
           created_at: string
           done: boolean
           due_date: string
@@ -321,6 +471,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_role?: string | null
           created_at?: string
           done?: boolean
           due_date?: string
@@ -337,6 +488,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_role?: string | null
           created_at?: string
           done?: boolean
           due_date?: string
