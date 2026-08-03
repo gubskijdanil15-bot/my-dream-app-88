@@ -61,6 +61,7 @@ export type Task = {
   remind_at: string | null;
   stage: Stage;
   key_result_id: string | null;
+  assigned_role: Role | null;
   links: ExternalLink[];
 };
 
@@ -80,8 +81,11 @@ export type Objective = {
   timeframe: string | null;
   category: string | null;
   archived: boolean;
+  status: LifecycleStatus;
+  completed_at: string | null;
   key_results: KeyResult[];
 };
+
 
 export const krProgress = (kr: KeyResult) =>
   kr.target_value > 0
