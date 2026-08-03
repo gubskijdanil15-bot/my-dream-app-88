@@ -178,17 +178,18 @@ export function useDeleteNote() {
 
 /* ---------------- goals ---------------- */
 
-export function useGoals(ownerId?: string) {
+export function useGoals(ownerId?: string, filter: StatusFilter = "active") {
   return useQuery({
-    queryKey: ["goals", ownerId ?? "me"],
+    queryKey: ["goals", ownerId ?? "me", filter],
     queryFn: async (): Promise<Goal[]> => {
       const owner = await ownerOrSelf(ownerId);
-      const { data, error } = await supabase
+      let query = supabase
         .from("goals")
-        .select("id, title, detail, target_date, progress, archived")
+        .select("id, title, detail, target_date, progress, archived, status, completed_at")
         .eq("user_id", owner)
-        .eq("archived", false)
-        .order("created_at", { ascending: false });
+        .eq("archived", false);
+      if (filter !== "all") query = query.eq("status", filter);
+      const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Goal[];
     },
@@ -210,7 +211,13 @@ export function useCreateGoal(ownerId?: string) {
 export function useUpdateGoal() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { id: string; progress?: number; archived?: boolean }) => {
+    mutationFn: async (input: {
+      id: string;
+      progress?: number;
+      archived?: boolean;
+      status?: LifecycleStatus;
+      completed_at?: string | null;
+    }) => {
       const { id, ...patch } = input;
       const { error } = await supabase.from("goals").update(patch).eq("id", id);
       if (error) throw error;
@@ -222,7 +229,7 @@ export function useUpdateGoal() {
 /* ---------------- tasks ---------------- */
 
 const TASK_COLUMNS =
-  "id, title, priority, done, due_date, due_time, remind_at, stage, key_result_id, links";
+  "id, title, priority, done, due_date, due_time, remind_at, stage, key_result_id, assigned_role, links";
 
 const mapTask = (row: Record<string, unknown>): Task => ({
   id: row['id'] as string,
@@ -234,6 +241,7 @@ const mapTask = (row: Record<string, unknown>): Task => ({
   remind_at: (row['remind_at'] as string | null) ?? null,
   stage: ((row['stage'] as Stage) ?? "idea") as Stage,
   key_result_id: (row['key_result_id'] as string | null) ?? null,
+  assigned_role: (row['assigned_role'] as Role | null) ?? null,
   links: parseLinks(row['links']),
 });
 
@@ -284,6 +292,7 @@ export function useCreateTask(ownerId?: string) {
       due_time?: string | null;
       remind_at?: string | null;
       key_result_id?: string | null;
+      assigned_role?: Role | null;
       stage?: Stage;
     }) => {
       const user_id = await ownerOrSelf(ownerId);
@@ -306,6 +315,7 @@ export function useUpdateTask() {
       remind_at?: string | null;
       stage?: Stage;
       key_result_id?: string | null;
+      assigned_role?: Role | null;
       links?: ExternalLink[];
     }) => {
       const { id, ...rest } = input;
@@ -354,17 +364,18 @@ export function useDeleteTask() {
 
 /* ---------------- OKRs ---------------- */
 
-export function useObjectives(ownerId?: string) {
+export function useObjectives(ownerId?: string, filter: StatusFilter = "all") {
   return useQuery({
-    queryKey: ["objectives", ownerId ?? "me"],
+    queryKey: ["objectives", ownerId ?? "me", filter],
     queryFn: async (): Promise<Objective[]> => {
       const owner = await ownerOrSelf(ownerId);
-      const { data, error } = await supabase
+      let query = supabase
         .from("objectives")
-        .select("id, title, description, timeframe, category, archived")
+        .select("id, title, description, timeframe, category, archived, status, completed_at")
         .eq("user_id", owner)
-        .eq("archived", false)
-        .order("created_at", { ascending: false });
+        .eq("archived", false);
+      if (filter !== "all") query = query.eq("status", filter);
+      const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw error;
       const objectives = data ?? [];
       if (objectives.length === 0) return [];
@@ -379,6 +390,7 @@ export function useObjectives(ownerId?: string) {
       if (krError) throw krError;
       return objectives.map((o) => ({
         ...o,
+        status: (o.status ?? "active") as LifecycleStatus,
         key_results: (krs ?? [])
           .filter((k) => k.objective_id === o.id)
           .map((k) => ({
@@ -402,6 +414,22 @@ export function useCreateObjective(ownerId?: string) {
     }) => {
       const user_id = await ownerOrSelf(ownerId);
       const { error } = await supabase.from("objectives").insert({ ...input, user_id });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["objectives"] }),
+  });
+}
+
+export function useUpdateObjective() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      status?: LifecycleStatus;
+      completed_at?: string | null;
+    }) => {
+      const { id, ...patch } = input;
+      const { error } = await supabase.from("objectives").update(patch).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["objectives"] }),
