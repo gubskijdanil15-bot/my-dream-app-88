@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { RulerProgress } from "@/components/ruler-progress";
@@ -11,6 +11,10 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { KanbanBoard } from "@/components/kanban-board";
 import { ContentCalendar } from "@/components/content-calendar";
 import { OkrBoard } from "@/components/okr-board";
+import { IdeaHub } from "@/components/idea-hub";
+import { AssetsBoard } from "@/components/assets-board";
+import { ReleaseRadar } from "@/components/release-radar";
+import { StatusTabs } from "@/components/status-tabs";
 import { NotificationBanner } from "@/components/notification-settings";
 
 import { useLang, type TranslationKey } from "@/lib/i18n";
@@ -32,7 +36,10 @@ import {
   useUpdateGoal,
   useUpdateNote,
   useUpdateTask,
+  ROLES,
+  type Role,
   type Stage,
+  type StatusFilter,
   type Task,
 } from "@/lib/workspace-data";
 
@@ -54,7 +61,18 @@ export const Route = createFileRoute("/_authenticated/workspace")({
   component: Workspace,
 });
 
-type Tab = "notes" | "note" | "goals" | "okr" | "plan" | "calendar";
+type Tab = "notes" | "note" | "goals" | "okr" | "plan" | "calendar" | "ideas" | "assets";
+
+const ROLE_KEY = "paperweight-role";
+
+const roleLabel = {
+  director: "role.director",
+  editor: "role.editor",
+  dp: "role.dp",
+  writer: "role.writer",
+  producer: "role.producer",
+  sound: "role.sound",
+} as const;
 type PlanView = "list" | "board";
 type Reminder = "none" | "at" | "1h" | "1d";
 
@@ -93,7 +111,7 @@ function Workspace() {
   const canEdit = ownerId ? activeJournal?.permission === "edit" : true;
 
   const notes = useNotes(scope);
-  const goals = useGoals(scope);
+  const goals = useGoals(scope, goalFilter);
   const tasks = useTasks(today, scope);
   const objectives = useObjectives(scope);
   const boardTasks = useTasksRange(addDays(new Date(), -30), addDays(new Date(), 120), scope);
@@ -116,6 +134,14 @@ function Workspace() {
   const [tab, setTab] = useState<Tab>("notes");
   const [planView, setPlanView] = useState<PlanView>("list");
   const [okrFormOpen, setOkrFormOpen] = useState(false);
+  const [ideaFormOpen, setIdeaFormOpen] = useState(false);
+  const [assetFormOpen, setAssetFormOpen] = useState(false);
+  const [goalFilter, setGoalFilter] = useState<StatusFilter>("active");
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [onlyMine, setOnlyMine] = useState(false);
+  const [myRole, setMyRole] = useState<Role | "">("");
+  const [taskRole, setTaskRole] = useState<Role | "">("");
+  const [pendingGoal, setPendingGoal] = useState<{ id: string; title: string } | null>(null);
 
   const [taskTitle, setTaskTitle] = useState("");
   const [taskPriority, setTaskPriority] = useState<Task["priority"]>("medium");
@@ -134,6 +160,21 @@ function Workspace() {
   const onNotes = tab === "notes" || tab === "note";
   const keyResults = (objectives.data ?? []).flatMap((o) =>
     o.key_results.map((kr) => ({ ...kr, objective: o.title })),
+  );
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(ROLE_KEY);
+    if (stored && (ROLES as readonly string[]).includes(stored)) setMyRole(stored as Role);
+  }, []);
+
+  const chooseRole = (value: Role | "") => {
+    setMyRole(value);
+    if (value) window.localStorage.setItem(ROLE_KEY, value);
+    else window.localStorage.removeItem(ROLE_KEY);
+  };
+
+  const visibleTasks = (tasks.data ?? []).filter(
+    (x) => !onlyMine || !myRole || x.assigned_role === myRole,
   );
 
   async function handleSignOut() {
@@ -177,6 +218,7 @@ function Workspace() {
         due_time: taskTime || null,
         remind_at: reminderAt(),
         key_result_id: taskKr || null,
+        assigned_role: taskRole || null,
       });
       setTaskTitle("");
       setTaskTime("");
@@ -215,7 +257,11 @@ function Workspace() {
           ? "okr.title"
           : tab === "calendar"
             ? "cal.title"
-            : "ws.notes";
+            : tab === "ideas"
+              ? "idea.title"
+              : tab === "assets"
+                ? "assets.title"
+                : "ws.notes";
 
   const notebookSwitcher = (joined.data?.length ?? 0) > 0 && (
     <select
@@ -251,6 +297,17 @@ function Workspace() {
       {count !== undefined && <span className="ml-1 opacity-60">{count}</span>}
     </button>
   );
+
+  const primaryAction: { label: TranslationKey; open: boolean; onClick: () => void } | null =
+    tab === "goals"
+      ? { label: "ws.newGoal", open: goalOpen, onClick: () => setGoalOpen((v) => !v) }
+      : tab === "okr"
+        ? { label: "okr.new", open: okrFormOpen, onClick: () => setOkrFormOpen((v) => !v) }
+        : tab === "ideas"
+          ? { label: "idea.new", open: ideaFormOpen, onClick: () => setIdeaFormOpen((v) => !v) }
+          : tab === "assets"
+            ? { label: "ws.add", open: assetFormOpen, onClick: () => setAssetFormOpen((v) => !v) }
+            : null;
 
   const field =
     "min-w-0 rounded-xl border border-border bg-card px-3 py-2.5 text-base focus:outline-none focus:ring-1 focus:ring-ring sm:text-sm";
@@ -313,6 +370,9 @@ function Workspace() {
               {longDate(new Date())}
             </p>
             {notebookSwitcher}
+            <div className="mt-2 flex max-w-full">
+              <ReleaseRadar tasks={boardTasks.data ?? []} />
+            </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {!canEdit && (
@@ -320,20 +380,12 @@ function Workspace() {
                 {t("share.readOnly")}
               </span>
             )}
-            {canEdit && tab === "goals" && (
+            {canEdit && primaryAction && (
               <button
-                onClick={() => setGoalOpen((v) => !v)}
+                onClick={primaryAction.onClick}
                 className="rounded-full bg-foreground px-4 py-2 text-xs font-bold text-background shadow-sm transition-colors hover:bg-accent active:scale-95"
               >
-                {goalOpen ? t("ws.close") : t("ws.newGoal")}
-              </button>
-            )}
-            {canEdit && tab === "okr" && (
-              <button
-                onClick={() => setOkrFormOpen((v) => !v)}
-                className="rounded-full bg-foreground px-4 py-2 text-xs font-bold text-background shadow-sm transition-colors hover:bg-accent active:scale-95"
-              >
-                {okrFormOpen ? t("ws.close") : t("okr.new")}
+                {primaryAction.open ? t("ws.close") : t(primaryAction.label)}
               </button>
             )}
             {tab === "note" && (
@@ -353,6 +405,8 @@ function Workspace() {
           {tabButton("goals", t("ws.tabGoals"), goals.data?.length ?? 0)}
           {tabButton("okr", t("ws.tabOkr"), objectives.data?.length ?? 0)}
           {tabButton("plan", t("ws.tabPlan"), tasks.data?.filter((x) => !x.done).length ?? 0)}
+          {tabButton("ideas", t("ws.tabIdeas"))}
+          {tabButton("assets", t("ws.tabAssets"))}
           {tabButton("calendar", t("ws.tabCalendar"))}
         </div>
 
@@ -448,6 +502,7 @@ function Workspace() {
         {tab === "goals" && (
           <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-8 md:pb-10">
             <div className="mx-auto max-w-6xl">
+              <StatusTabs value={goalFilter} onChange={setGoalFilter} />
               {goalOpen && canEdit && (
                 <form
                   onSubmit={submitGoal}
@@ -486,15 +541,6 @@ function Workspace() {
                 </form>
               )}
 
-              {!goalOpen && canEdit && (
-                <button
-                  onClick={() => setGoalOpen(true)}
-                  className="mb-8 rounded-full border border-border px-4 py-2 text-xs font-bold hover:border-accent hover:text-accent md:hidden"
-                >
-                  {t("ws.newGoal")}
-                </button>
-              )}
-
               {goals.data?.length === 0 && (
                 <p className="text-xs text-muted-foreground">{t("ws.emptyGoals")}</p>
               )}
@@ -506,7 +552,14 @@ function Workspace() {
                   >
                     <div className="mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
                       <div className="min-w-0">
-                        <h4 className="break-words text-sm font-bold">{goal.title}</h4>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="min-w-0 break-words text-sm font-bold">{goal.title}</h4>
+                          {goal.status === "completed" && (
+                            <span className="shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                              {t("status.badge")}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[11px] text-muted-foreground">
                           {goal.target_date
                             ? `${t("ws.target")}: ${goal.target_date}`
@@ -544,10 +597,18 @@ function Workspace() {
                               +
                             </button>
                             <button
-                              onClick={() => updateGoal.mutate({ id: goal.id, archived: true })}
+                              onClick={() =>
+                                goal.status === "completed"
+                                  ? updateGoal.mutate({
+                                      id: goal.id,
+                                      status: "active",
+                                      completed_at: null,
+                                    })
+                                  : setPendingGoal({ id: goal.id, title: goal.title })
+                              }
                               className="text-[11px] font-semibold text-muted-foreground hover:text-accent"
                             >
-                              {t("ws.done")}
+                              {t(goal.status === "completed" ? "status.reopen" : "status.markDone")}
                             </button>
                           </>
                         )}
@@ -565,19 +626,39 @@ function Workspace() {
         {tab === "okr" && (
           <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-8 md:pb-10">
             <div className="mx-auto max-w-7xl">
-              {!okrFormOpen && canEdit && (
-                <button
-                  onClick={() => setOkrFormOpen(true)}
-                  className="mb-6 rounded-full border border-border px-4 py-2 text-xs font-bold hover:border-accent hover:text-accent md:hidden"
-                >
-                  {t("okr.new")}
-                </button>
-              )}
               <OkrBoard
                 ownerId={scope}
                 canEdit={canEdit}
                 formOpen={okrFormOpen}
                 onCloseForm={() => setOkrFormOpen(false)}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* IDEAS */}
+        {tab === "ideas" && (
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-8 md:pb-10">
+            <div className="mx-auto max-w-7xl">
+              <IdeaHub
+                ownerId={scope}
+                canEdit={canEdit}
+                formOpen={ideaFormOpen}
+                onCloseForm={() => setIdeaFormOpen(false)}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ASSETS */}
+        {tab === "assets" && (
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-8 md:pb-10">
+            <div className="mx-auto max-w-7xl">
+              <AssetsBoard
+                ownerId={scope}
+                canEdit={canEdit}
+                formOpen={assetFormOpen}
+                onCloseForm={() => setAssetFormOpen(false)}
               />
             </div>
           </div>
@@ -618,6 +699,44 @@ function Workspace() {
                     </button>
                   ))}
                 </div>
+                {planView === "list" && (
+                  <div className="inline-flex rounded-full border border-border p-1">
+                    {(
+                      [
+                        [false, "task.all"],
+                        [true, "task.mine"],
+                      ] as const
+                    ).map(([value, label]) => (
+                      <button
+                        key={String(value)}
+                        onClick={() => setOnlyMine(value)}
+                        aria-pressed={onlyMine === value}
+                        className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
+                          onlyMine === value
+                            ? "bg-foreground text-background"
+                            : "text-muted-foreground hover:text-accent"
+                        }`}
+                      >
+                        {t(label)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {planView === "list" && onlyMine && (
+                  <select
+                    value={myRole}
+                    onChange={(e) => chooseRole(e.target.value as Role | "")}
+                    aria-label={t("task.role")}
+                    className="min-w-0 rounded-full border border-border bg-card px-3 py-1.5 text-xs"
+                  >
+                    <option value="">{t("role.none")}</option>
+                    {ROLES.map((r) => (
+                      <option key={r} value={r}>
+                        {t(roleLabel[r])}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 {canEdit && planView === "list" && (tasks.data?.some((x) => x.done) ?? false) && (
                   <button
                     onClick={() => setPendingClear(true)}
@@ -639,7 +758,7 @@ function Workspace() {
                   {canEdit && (
                     <form
                       onSubmit={submitTask}
-                      className="mb-6 grid gap-2 rounded-2xl border border-border bg-card/60 p-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_7rem_minmax(0,8rem)_minmax(0,10rem)_auto]"
+                      className="mb-6 grid gap-2 rounded-2xl border border-border bg-card/60 p-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_7rem_minmax(0,8rem)_minmax(0,10rem)_minmax(0,9rem)_auto]"
                     >
                       <input
                         value={taskTitle}
@@ -676,12 +795,25 @@ function Workspace() {
                         <option value="1h">{t("remind.1h")}</option>
                         <option value="1d">{t("remind.1d")}</option>
                       </select>
+                      <select
+                        value={taskRole}
+                        onChange={(e) => setTaskRole(e.target.value as Role | "")}
+                        aria-label={t("task.role")}
+                        className={`${field} w-full`}
+                      >
+                        <option value="">{t("role.none")}</option>
+                        {ROLES.map((r) => (
+                          <option key={r} value={r}>
+                            {t(roleLabel[r])}
+                          </option>
+                        ))}
+                      </select>
                       {keyResults.length > 0 && (
                         <select
                           value={taskKr}
                           onChange={(e) => setTaskKr(e.target.value)}
                           aria-label={t("task.linkKr")}
-                          className={`${field} w-full sm:col-span-2 lg:col-span-4`}
+                          className={`${field} w-full sm:col-span-2 lg:col-span-5`}
                         >
                           <option value="">
                             {t("task.linkKr")}: {t("okr.none")}
@@ -703,10 +835,10 @@ function Workspace() {
                   )}
 
                   <div className="space-y-1">
-                    {tasks.data?.length === 0 && (
+                    {visibleTasks.length === 0 && (
                       <p className="py-3 text-xs text-muted-foreground">{t("ws.emptyTasks")}</p>
                     )}
-                    {tasks.data?.map((task) => {
+                    {visibleTasks.map((task) => {
                       const kr = keyResults.find((k) => k.id === task.key_result_id);
                       return (
                         <div
@@ -746,6 +878,11 @@ function Workspace() {
                               {kr.title}
                             </span>
                           )}
+                          {task.assigned_role && (
+                            <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                              {t(roleLabel[task.assigned_role])}
+                            </span>
+                          )}
                           <span className="shrink-0 text-[11px] text-muted-foreground/60">
                             {priorityLabel(task.priority)}
                           </span>
@@ -777,7 +914,6 @@ function Workspace() {
             ["goals", "ws.tabGoals"],
             ["okr", "ws.tabOkr"],
             ["plan", "ws.tabPlan"],
-            ["calendar", "ws.tabCalendar"],
           ] as const
         ).map(([key, label]) => (
           <button
@@ -790,7 +926,60 @@ function Workspace() {
             {t(label)}
           </button>
         ))}
+        <button
+          onClick={() => setMoreOpen(true)}
+          className={`py-3.5 text-[11px] font-semibold transition-colors ${
+            tab === "ideas" || tab === "assets" || tab === "calendar"
+              ? "text-accent"
+              : "text-muted-foreground"
+          }`}
+        >
+          {t("ws.more")}
+        </button>
       </nav>
+
+      {moreOpen && (
+        <div
+          className="fixed inset-0 z-30 flex items-end bg-foreground/30 backdrop-blur-sm md:hidden"
+          onClick={() => setMoreOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="animate-entry w-full rounded-t-3xl border-t border-border bg-background p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
+          >
+            {(
+              [
+                ["ideas", "ws.tabIdeas"],
+                ["assets", "ws.tabAssets"],
+                ["calendar", "ws.tabCalendar"],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => {
+                  setTab(key);
+                  setMoreOpen(false);
+                }}
+                className="block w-full rounded-xl px-4 py-3.5 text-left text-sm font-semibold hover:bg-card"
+              >
+                {t(label)}
+              </button>
+            ))}
+            <Link
+              to="/shared"
+              className="block w-full rounded-xl px-4 py-3.5 text-left text-sm font-semibold hover:bg-card"
+            >
+              {t("ws.tabShare")}
+            </Link>
+            <Link
+              to="/profile"
+              className="block w-full rounded-xl px-4 py-3.5 text-left text-sm font-semibold hover:bg-card"
+            >
+              {t("ws.tabProfile")}
+            </Link>
+          </div>
+        </div>
+      )}
 
       <ConfirmDialog
         open={!!pendingNote}
@@ -809,6 +998,21 @@ function Workspace() {
         detail={pendingTask?.title}
         onCancel={() => setPendingTask(null)}
         onConfirm={() => pendingTask && deleteTask.mutate(pendingTask.id)}
+      />
+      <ConfirmDialog
+        open={!!pendingGoal}
+        messageKey="confirm.completeGoal"
+        detail={pendingGoal?.title}
+        onCancel={() => setPendingGoal(null)}
+        onConfirm={() =>
+          pendingGoal &&
+          updateGoal.mutate({
+            id: pendingGoal.id,
+            status: "completed",
+            completed_at: new Date().toISOString(),
+            progress: 100,
+          })
+        }
       />
       <ConfirmDialog
         open={pendingClear}
