@@ -23,6 +23,9 @@ export type Note = {
   updated_at: string;
 };
 
+export type LifecycleStatus = "active" | "completed";
+export type StatusFilter = LifecycleStatus | "all";
+
 export type Goal = {
   id: string;
   title: string;
@@ -30,7 +33,14 @@ export type Goal = {
   target_date: string | null;
   progress: number;
   archived: boolean;
+  status: LifecycleStatus;
+  completed_at: string | null;
 };
+
+/** Team roles a task can be assigned to. */
+export const ROLES = ["director", "editor", "dp", "writer", "producer", "sound"] as const;
+export type Role = (typeof ROLES)[number];
+
 
 export const STAGES = [
   "idea",
