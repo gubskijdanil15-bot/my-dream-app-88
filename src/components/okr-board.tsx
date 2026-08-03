@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { useLang } from "@/lib/i18n";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { RulerProgress } from "@/components/ruler-progress";
+import { StatusTabs } from "@/components/status-tabs";
 import {
   krProgress,
   objectiveProgress,
@@ -12,14 +13,18 @@ import {
   useDeleteObjective,
   useObjectives,
   useUpdateKeyResult,
+  useUpdateObjective,
   type Objective,
+  type StatusFilter,
 } from "@/lib/workspace-data";
 
 type Props = { ownerId?: string; canEdit: boolean; formOpen: boolean; onCloseForm: () => void };
 
 export function OkrBoard({ ownerId, canEdit, formOpen, onCloseForm }: Props) {
   const { t } = useLang();
-  const objectives = useObjectives(ownerId);
+  const [filter, setFilter] = useState<StatusFilter>("active");
+  const objectives = useObjectives(ownerId, filter);
+  const allObjectives = useObjectives(ownerId, "all");
   const createObjective = useCreateObjective(ownerId);
   const deleteObjective = useDeleteObjective();
 
@@ -53,8 +58,32 @@ export function OkrBoard({ ownerId, canEdit, formOpen, onCloseForm }: Props) {
     }
   }
 
+  const all = allObjectives.data ?? [];
+  const activeCount = all.filter((o) => o.status !== "completed").length;
+  const doneCount = all.length - activeCount;
+  const overall =
+    all.length === 0 ? 0 : Math.round(all.reduce((s, o) => s + objectiveProgress(o), 0) / all.length);
+
   return (
     <div>
+      <div className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {(
+          [
+            ["okr.total", String(all.length)],
+            ["okr.activeCount", String(activeCount)],
+            ["okr.completedCount", String(doneCount)],
+            ["okr.quarterProgress", `${overall}%`],
+          ] as const
+        ).map(([label, value]) => (
+          <div key={label} className="rounded-2xl border border-border bg-card px-3 py-2.5">
+            <div className="truncate text-[11px] text-muted-foreground">{t(label)}</div>
+            <div className="text-lg font-extrabold">{value}</div>
+          </div>
+        ))}
+      </div>
+
+      <StatusTabs value={filter} onChange={setFilter} />
+
       {formOpen && canEdit && (
         <form
           onSubmit={submit}
@@ -136,6 +165,7 @@ function ObjectiveCard({
   onDelete: () => void;
 }) {
   const { t } = useLang();
+  const updateObjective = useUpdateObjective();
   const createKr = useCreateKeyResult(ownerId);
   const updateKr = useUpdateKeyResult();
   const deleteKr = useDeleteKeyResult();
@@ -147,6 +177,7 @@ function ObjectiveCard({
   const [pendingKr, setPendingKr] = useState<string | null>(null);
 
   const progress = objectiveProgress(objective);
+  const completed = objective.status === "completed";
   const field =
     "min-w-0 rounded-xl border border-border bg-background px-3 py-2.5 text-base focus:outline-none focus:ring-1 focus:ring-ring sm:text-sm";
 
@@ -170,10 +201,21 @@ function ObjectiveCard({
   }
 
   return (
-    <article className="animate-entry flex flex-col rounded-2xl border border-border bg-card p-5">
+    <article
+      className={`animate-entry flex flex-col rounded-2xl border bg-card p-5 transition-colors ${
+        completed ? "border-emerald-500/40" : "border-border"
+      }`}
+    >
       <header className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
         <div className="min-w-0">
-          <h3 className="text-base font-bold break-words">{objective.title}</h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="min-w-0 break-words text-base font-bold">{objective.title}</h3>
+            {completed && (
+              <span className="shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                {t("status.badge")}
+              </span>
+            )}
+          </div>
           <p className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] text-muted-foreground">
             {objective.timeframe && <span>{objective.timeframe}</span>}
             {objective.category && <span>· {objective.category}</span>}
@@ -187,12 +229,26 @@ function ObjectiveCard({
         <div className="shrink-0 text-right">
           <div className="text-lg font-extrabold text-accent">{progress}%</div>
           {canEdit && (
-            <button
-              onClick={onDelete}
-              className="text-[11px] font-semibold text-muted-foreground hover:text-destructive"
-            >
-              {t("ws.delete")}
-            </button>
+            <div className="flex flex-col items-end gap-0.5">
+              <button
+                onClick={() =>
+                  updateObjective.mutate({
+                    id: objective.id,
+                    status: completed ? "active" : "completed",
+                    completed_at: completed ? null : new Date().toISOString(),
+                  })
+                }
+                className="text-[11px] font-semibold text-muted-foreground hover:text-accent"
+              >
+                {t(completed ? "status.reopen" : "status.markDone")}
+              </button>
+              <button
+                onClick={onDelete}
+                className="text-[11px] font-semibold text-muted-foreground hover:text-destructive"
+              >
+                {t("ws.delete")}
+              </button>
+            </div>
           )}
         </div>
       </header>
