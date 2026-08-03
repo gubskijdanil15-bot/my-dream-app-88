@@ -110,6 +110,7 @@ function Workspace() {
   const scope = ownerId ?? undefined;
   const canEdit = ownerId ? activeJournal?.permission === "edit" : true;
 
+  const [goalFilter, setGoalFilter] = useState<StatusFilter>("active");
   const notes = useNotes(scope);
   const goals = useGoals(scope, goalFilter);
   const tasks = useTasks(today, scope);
@@ -136,7 +137,6 @@ function Workspace() {
   const [okrFormOpen, setOkrFormOpen] = useState(false);
   const [ideaFormOpen, setIdeaFormOpen] = useState(false);
   const [assetFormOpen, setAssetFormOpen] = useState(false);
-  const [goalFilter, setGoalFilter] = useState<StatusFilter>("active");
   const [moreOpen, setMoreOpen] = useState(false);
   const [onlyMine, setOnlyMine] = useState(false);
   const [myRole, setMyRole] = useState<Role | "">("");
