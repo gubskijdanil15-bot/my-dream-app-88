@@ -15,7 +15,7 @@ import {
 } from "@/lib/production-data";
 import type { StatusFilter } from "@/lib/workspace-data";
 
-const tagLabel: Record<IdeaTag, TranslationKey> = {
+const tagLabel: Record<string, TranslationKey> = {
   reels: "tag.reels",
   shorts: "tag.shorts",
   shortfilm: "tag.shortfilm",
@@ -35,8 +35,14 @@ export function IdeaHub({ ownerId, canEdit, formOpen, onCloseForm }: Props) {
 
   const [title, setTitle] = useState("");
   const [detail, setDetail] = useState("");
-  const [tag, setTag] = useState<IdeaTag>("reels");
+  const [tag, setTag] = useState<IdeaTag>("");
   const [pending, setPending] = useState<Idea | null>(null);
+
+  const customTags = Array.from(
+    new Set((ideas.data ?? []).map((i) => i.tag).filter((x) => !(x in tagLabel))),
+  );
+
+  const tagText = (value: string) => (value in tagLabel ? t(tagLabel[value]!) : value);
 
   const field =
     "w-full min-w-0 rounded-xl border border-border bg-background px-3 py-2.5 text-base focus:outline-none focus:ring-1 focus:ring-ring sm:text-sm";
@@ -49,10 +55,11 @@ export function IdeaHub({ ownerId, canEdit, formOpen, onCloseForm }: Props) {
       await createIdea.mutateAsync({
         title: value.slice(0, 200),
         detail: detail.trim() || null,
-        tag,
+        tag: tag.trim().slice(0, 40) || "reels",
       });
       setTitle("");
       setDetail("");
+      setTag("");
       onCloseForm();
     } catch {
       toast.error(t("ws.errNote"));
@@ -82,24 +89,39 @@ export function IdeaHub({ ownerId, canEdit, formOpen, onCloseForm }: Props) {
             maxLength={400}
             className={field}
           />
-          <select
+          <input
             value={tag}
-            onChange={(e) => setTag(e.target.value as IdeaTag)}
+            onChange={(e) => setTag(e.target.value)}
+            list="idea-tag-suggestions"
+            placeholder={t("tag.custom")}
+            maxLength={40}
             aria-label={t("idea.title")}
             className={field}
-          >
-            {IDEA_TAGS.map((x) => (
-              <option key={x} value={x}>
-                {t(tagLabel[x])}
-              </option>
+          />
+          <datalist id="idea-tag-suggestions">
+            {[...IDEA_TAGS.map((x) => t(tagLabel[x]!)), ...customTags].map((x) => (
+              <option key={x} value={x} />
             ))}
-          </select>
+          </datalist>
           <button
             type="submit"
             className="rounded-full bg-accent px-5 py-2.5 text-xs font-bold text-accent-foreground"
           >
             {t("ws.add")}
           </button>
+          {(title || detail || tag) && (
+            <button
+              type="button"
+              onClick={() => {
+                setTitle("");
+                setDetail("");
+                setTag("");
+              }}
+              className="rounded-full border border-border px-5 py-2.5 text-xs font-bold text-muted-foreground hover:border-destructive hover:text-destructive sm:col-span-3 sm:justify-self-start"
+            >
+              {t("form.clear")}
+            </button>
+          )}
         </form>
       )}
 
@@ -128,7 +150,7 @@ export function IdeaHub({ ownerId, canEdit, formOpen, onCloseForm }: Props) {
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="min-w-0 break-words text-sm font-bold">{idea.title}</h3>
                 <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-                  {t(tagLabel[idea.tag])}
+                  {tagText(idea.tag)}
                 </span>
                 {idea.status === "completed" && (
                   <span className="shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
