@@ -73,6 +73,8 @@ const roleLabel = {
   producer: "role.producer",
   sound: "role.sound",
 } as const;
+
+const ROLE_LIST_ID = "role-suggestions";
 type PlanView = "list" | "board";
 type Reminder = "none" | "at" | "1h" | "1d";
 
@@ -164,7 +166,7 @@ function Workspace() {
 
   useEffect(() => {
     const stored = window.localStorage.getItem(ROLE_KEY);
-    if (stored && (ROLES as readonly string[]).includes(stored)) setMyRole(stored as Role);
+    if (stored) setMyRole(stored);
   }, []);
 
   const chooseRole = (value: Role | "") => {
@@ -172,6 +174,28 @@ function Workspace() {
     if (value) window.localStorage.setItem(ROLE_KEY, value);
     else window.localStorage.removeItem(ROLE_KEY);
   };
+
+  const roleText = (role: string) =>
+    role in roleLabel ? t(roleLabel[role as keyof typeof roleLabel]) : role;
+
+  const customRoles = Array.from(
+    new Set(
+      (tasks.data ?? [])
+        .map((x) => x.assigned_role)
+        .filter((x): x is string => !!x && !(x in roleLabel)),
+    ),
+  );
+
+  const formDirty = !!(taskTitle || taskTime || taskKr || taskRole || taskReminder !== "none");
+
+  function resetTaskForm() {
+    setTaskTitle("");
+    setTaskTime("");
+    setTaskReminder("none");
+    setTaskKr("");
+    setTaskRole("");
+    setTaskPriority("medium");
+  }
 
   const visibleTasks = (tasks.data ?? []).filter(
     (x) => !onlyMine || !myRole || x.assigned_role === myRole,
@@ -723,19 +747,15 @@ function Workspace() {
                   </div>
                 )}
                 {planView === "list" && onlyMine && (
-                  <select
+                  <input
                     value={myRole}
-                    onChange={(e) => chooseRole(e.target.value as Role | "")}
+                    onChange={(e) => chooseRole(e.target.value)}
+                    list={ROLE_LIST_ID}
+                    placeholder={t("role.custom")}
+                    maxLength={40}
                     aria-label={t("task.role")}
-                    className="min-w-0 rounded-full border border-border bg-card px-3 py-1.5 text-xs"
-                  >
-                    <option value="">{t("role.none")}</option>
-                    {ROLES.map((r) => (
-                      <option key={r} value={r}>
-                        {t(roleLabel[r])}
-                      </option>
-                    ))}
-                  </select>
+                    className="min-w-0 max-w-[11rem] rounded-full border border-border bg-card px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
                 )}
                 {canEdit && planView === "list" && (tasks.data?.some((x) => x.done) ?? false) && (
                   <button
@@ -795,19 +815,15 @@ function Workspace() {
                         <option value="1h">{t("remind.1h")}</option>
                         <option value="1d">{t("remind.1d")}</option>
                       </select>
-                      <select
+                      <input
                         value={taskRole}
-                        onChange={(e) => setTaskRole(e.target.value as Role | "")}
+                        onChange={(e) => setTaskRole(e.target.value)}
+                        list={ROLE_LIST_ID}
+                        placeholder={t("role.custom")}
+                        maxLength={40}
                         aria-label={t("task.role")}
                         className={`${field} w-full`}
-                      >
-                        <option value="">{t("role.none")}</option>
-                        {ROLES.map((r) => (
-                          <option key={r} value={r}>
-                            {t(roleLabel[r])}
-                          </option>
-                        ))}
-                      </select>
+                      />
                       {keyResults.length > 0 && (
                         <select
                           value={taskKr}
@@ -831,6 +847,15 @@ function Workspace() {
                       >
                         {t("ws.add")}
                       </button>
+                      {formDirty && (
+                        <button
+                          type="button"
+                          onClick={resetTaskForm}
+                          className="w-full rounded-xl border border-border px-5 py-2.5 text-xs font-bold text-muted-foreground hover:border-destructive hover:text-destructive sm:col-span-2 lg:col-span-6 lg:w-auto lg:justify-self-start"
+                        >
+                          {t("form.clear")}
+                        </button>
+                      )}
                     </form>
                   )}
 
@@ -880,7 +905,7 @@ function Workspace() {
                           )}
                           {task.assigned_role && (
                             <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-                              {t(roleLabel[task.assigned_role])}
+                              {roleText(task.assigned_role)}
                             </span>
                           )}
                           <span className="shrink-0 text-[11px] text-muted-foreground/60">
@@ -1014,12 +1039,24 @@ function Workspace() {
           })
         }
       />
+      <datalist id={ROLE_LIST_ID}>
+        {[...ROLES.map((r) => t(roleLabel[r])), ...customRoles].map((r) => (
+          <option key={r} value={r} />
+        ))}
+      </datalist>
       <ConfirmDialog
         open={pendingClear}
         messageKey="confirm.clearDone"
         onCancel={() => setPendingClear(false)}
         onConfirm={() => {
-          for (const task of tasks.data ?? []) if (task.done) deleteTask.mutate(task.id);
+          void (async () => {
+            const done = (tasks.data ?? []).filter((task) => task.done);
+            try {
+              await Promise.all(done.map((task) => deleteTask.mutateAsync(task.id)));
+            } catch {
+              toast.error(t("ws.errTask"));
+            }
+          })();
         }}
       />
     </div>
