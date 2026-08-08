@@ -4,6 +4,7 @@ import { STAGES, type Stage, type Task } from "@/lib/workspace-data";
 const STAGE_LABEL: Record<Stage, TranslationKey> = {
   idea: "stage.idea",
   script: "stage.script",
+  storyboard: "stage.storyboard",
   production: "stage.production",
   post: "stage.post",
   published: "stage.published",
