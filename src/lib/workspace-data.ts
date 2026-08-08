@@ -37,14 +37,16 @@ export type Goal = {
   completed_at: string | null;
 };
 
-/** Team roles a task can be assigned to. */
+/** Suggested team roles — users may type any custom role. */
 export const ROLES = ["director", "editor", "dp", "writer", "producer", "sound"] as const;
-export type Role = (typeof ROLES)[number];
-
+export type PresetRole = (typeof ROLES)[number];
+/** Any free-form role string. */
+export type Role = string;
 
 export const STAGES = [
   "idea",
   "script",
+  "storyboard",
   "production",
   "post",
   "published",
