@@ -2,8 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { currentUserId, type StatusFilter } from "@/lib/workspace-data";
 
+/** Suggested content types — users may type any custom tag. */
 export const IDEA_TAGS = ["reels", "shorts", "shortfilm", "bts"] as const;
-export type IdeaTag = (typeof IDEA_TAGS)[number];
+export type PresetIdeaTag = (typeof IDEA_TAGS)[number];
+/** Any free-form content type. */
+export type IdeaTag = string;
 
 export const EQUIPMENT_CATEGORIES = ["camera", "audio", "lighting", "grip", "other"] as const;
 export type EquipmentCategory = (typeof EQUIPMENT_CATEGORIES)[number];

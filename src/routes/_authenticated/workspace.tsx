@@ -197,8 +197,11 @@ function Workspace() {
     setTaskPriority("medium");
   }
 
+  const sameRole = (a: string | null, b: string) =>
+    !!a && (a === b || roleText(a).toLowerCase() === b.trim().toLowerCase());
+
   const visibleTasks = (tasks.data ?? []).filter(
-    (x) => !onlyMine || !myRole || x.assigned_role === myRole,
+    (x) => !onlyMine || !myRole.trim() || sameRole(x.assigned_role, myRole),
   );
 
   async function handleSignOut() {
