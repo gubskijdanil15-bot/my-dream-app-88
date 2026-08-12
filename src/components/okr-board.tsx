@@ -232,6 +232,11 @@ function ObjectiveCard({
           </div>
           <p className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] text-muted-foreground">
             {objective.timeframe && <span>{objective.timeframe}</span>}
+            {objective.target_date && (
+              <span>
+                · {t("okr.targetDate")}: {objective.target_date}
+              </span>
+            )}
             {objective.category && <span>· {objective.category}</span>}
           </p>
           {objective.description && (
