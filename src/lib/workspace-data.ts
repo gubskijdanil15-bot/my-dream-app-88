@@ -375,7 +375,9 @@ export function useObjectives(ownerId?: string, filter: StatusFilter = "all") {
       const owner = await ownerOrSelf(ownerId);
       let query = supabase
         .from("objectives")
-        .select("id, title, description, timeframe, category, archived, status, completed_at")
+        .select(
+          "id, title, description, timeframe, category, target_date, archived, status, completed_at",
+        )
         .eq("user_id", owner)
         .eq("archived", false);
       if (filter !== "all") query = query.eq("status", filter);
