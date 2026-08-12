@@ -120,6 +120,17 @@ export function OkrBoard({ ownerId, canEdit, formOpen, onCloseForm }: Props) {
             maxLength={40}
             className={field}
           />
+          <label className="sm:col-span-2 grid gap-1">
+            <span className="text-[11px] font-semibold text-muted-foreground">
+              {t("okr.targetDate")}
+            </span>
+            <input
+              type="date"
+              value={targetDate}
+              onChange={(e) => setTargetDate(e.target.value)}
+              className={field}
+            />
+          </label>
           <button
             type="submit"
             className="justify-self-start rounded-full bg-accent px-5 py-2.5 text-xs font-bold text-accent-foreground sm:col-span-2"
