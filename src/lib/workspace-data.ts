@@ -417,6 +417,7 @@ export function useCreateObjective(ownerId?: string) {
       description: string | null;
       timeframe: string | null;
       category: string | null;
+      target_date?: string | null;
     }) => {
       const user_id = await ownerOrSelf(ownerId);
       const { error } = await supabase.from("objectives").insert({ ...input, user_id });
@@ -433,6 +434,7 @@ export function useUpdateObjective() {
       id: string;
       status?: LifecycleStatus;
       completed_at?: string | null;
+      target_date?: string | null;
     }) => {
       const { id, ...patch } = input;
       const { error } = await supabase.from("objectives").update(patch).eq("id", id);
