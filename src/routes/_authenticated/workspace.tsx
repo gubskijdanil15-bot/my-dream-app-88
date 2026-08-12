@@ -113,9 +113,11 @@ function Workspace() {
   const canEdit = ownerId ? activeJournal?.permission === "edit" : true;
 
   const [goalFilter, setGoalFilter] = useState<StatusFilter>("active");
+  const [planDate, setPlanDate] = useState(today);
   const notes = useNotes(scope);
   const goals = useGoals(scope, goalFilter);
-  const tasks = useTasks(today, scope);
+  const tasks = useTasks(planDate, scope);
+  const todayTasks = useTasks(today, scope);
   const objectives = useObjectives(scope);
   const boardTasks = useTasksRange(addDays(new Date(), -30), addDays(new Date(), 120), scope);
 
@@ -130,7 +132,7 @@ function Workspace() {
   const deleteTask = useDeleteTask();
 
   const prefs = useNotificationPrefs();
-  useTaskReminders(tasks.data, !ownerId && !!prefs.data?.taskReminders);
+  useTaskReminders(todayTasks.data, !ownerId && !!prefs.data?.taskReminders);
 
   const [capture, setCapture] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -227,7 +229,7 @@ function Workspace() {
 
   function reminderAt(): string | null {
     if (taskReminder === "none") return null;
-    const base = new Date(`${today}T${taskTime || "09:00"}:00`);
+    const base = new Date(`${planDate}T${taskTime || "09:00"}:00`);
     if (taskReminder === "1h") base.setHours(base.getHours() - 1);
     if (taskReminder === "1d") base.setDate(base.getDate() - 1);
     return base.toISOString();
@@ -241,7 +243,7 @@ function Workspace() {
       await createTask.mutateAsync({
         title: title.slice(0, 200),
         priority: taskPriority,
-        due_date: today,
+        due_date: planDate,
         due_time: taskTime || null,
         remind_at: reminderAt(),
         key_result_id: taskKr || null,
@@ -410,9 +412,9 @@ function Workspace() {
             {canEdit && primaryAction && (
               <button
                 onClick={primaryAction.onClick}
-                className="rounded-full bg-foreground px-4 py-2 text-xs font-bold text-background shadow-sm transition-colors hover:bg-accent active:scale-95"
+                className="rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-accent-foreground shadow-md ring-2 ring-accent/25 transition-transform hover:opacity-95 active:scale-95"
               >
-                {primaryAction.open ? t("ws.close") : t(primaryAction.label)}
+                {primaryAction.open ? t("ws.close") : `+ ${t(primaryAction.label)}`}
               </button>
             )}
             {tab === "note" && (
@@ -695,7 +697,10 @@ function Workspace() {
         {tab === "calendar" && (
           <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-8 md:pb-10">
             <div className="mx-auto max-w-6xl">
-              <ContentCalendar ownerId={scope} />
+              <ContentCalendar
+                ownerId={scope}
+                onOpenMilestone={(m) => setTab(m.kind === "goal" ? "goals" : "okr")}
+              />
             </div>
           </div>
         )}
@@ -704,6 +709,39 @@ function Workspace() {
         {tab === "plan" && (
           <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-8 md:pb-10">
             <div className="mx-auto max-w-6xl">
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                <div className="inline-flex rounded-full border border-border p-1">
+                  {(
+                    [
+                      [today, "plan.today"],
+                      [addDays(new Date(), 1), "plan.tomorrow"],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <button
+                      key={label}
+                      onClick={() => setPlanDate(value)}
+                      aria-pressed={planDate === value}
+                      className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
+                        planDate === value
+                          ? "bg-accent text-accent-foreground"
+                          : "text-muted-foreground hover:text-accent"
+                      }`}
+                    >
+                      {t(label)}
+                    </button>
+                  ))}
+                </div>
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>{t("plan.for")}</span>
+                  <input
+                    type="date"
+                    value={planDate}
+                    onChange={(e) => setPlanDate(e.target.value || today)}
+                    aria-label={t("plan.pickDate")}
+                    className="rounded-full border border-border bg-card px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
+                </label>
+              </div>
               <div className="mb-5 flex flex-wrap items-center gap-2">
                 <div className="inline-flex rounded-full border border-border p-1">
                   {(

@@ -320,6 +320,18 @@ const dict = {
     "confirm.deleteEquipment": "Remove this gear from the list?",
     "confirm.deleteLocation": "Remove this location?",
     "confirm.completeGoal": "Mark this goal as completed?",
+    "plan.for": "Planning for",
+    "plan.today": "Today",
+    "plan.tomorrow": "Tomorrow",
+    "plan.week": "Next 7 days",
+    "plan.pickDate": "Pick a date",
+    "task.due": "Due date",
+    "cal.goal": "Goal",
+    "cal.okr": "OKR",
+    "cal.milestone": "Milestone",
+    "okr.targetDate": "Target date",
+    "idea.delete": "Delete idea",
+
 
 
 
@@ -641,6 +653,18 @@ const dict = {
     "confirm.deleteEquipment": "Прибрати це обладнання зі списку?",
     "confirm.deleteLocation": "Прибрати цю локацію?",
     "confirm.completeGoal": "Позначити ціль завершеною?",
+    "plan.for": "План на",
+    "plan.today": "Сьогодні",
+    "plan.tomorrow": "Завтра",
+    "plan.week": "Наступні 7 днів",
+    "plan.pickDate": "Обрати дату",
+    "task.due": "Дата виконання",
+    "cal.goal": "Ціль",
+    "cal.okr": "OKR",
+    "cal.milestone": "Віха",
+    "okr.targetDate": "Цільова дата",
+    "idea.delete": "Видалити ідею",
+
 
 
 

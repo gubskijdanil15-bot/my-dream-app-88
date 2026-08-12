@@ -398,6 +398,7 @@ export type Database = {
           description: string | null
           id: string
           status: string
+          target_date: string | null
           timeframe: string | null
           title: string
           updated_at: string
@@ -411,6 +412,7 @@ export type Database = {
           description?: string | null
           id?: string
           status?: string
+          target_date?: string | null
           timeframe?: string | null
           title: string
           updated_at?: string
@@ -424,6 +426,7 @@ export type Database = {
           description?: string | null
           id?: string
           status?: string
+          target_date?: string | null
           timeframe?: string | null
           title?: string
           updated_at?: string

@@ -32,6 +32,7 @@ export function OkrBoard({ ownerId, canEdit, formOpen, onCloseForm }: Props) {
   const [description, setDescription] = useState("");
   const [timeframe, setTimeframe] = useState("");
   const [category, setCategory] = useState("");
+  const [targetDate, setTargetDate] = useState("");
   const [pendingDelete, setPendingDelete] = useState<Objective | null>(null);
 
   const field =
@@ -47,11 +48,13 @@ export function OkrBoard({ ownerId, canEdit, formOpen, onCloseForm }: Props) {
         description: description.trim() || null,
         timeframe: timeframe.trim() || null,
         category: category.trim() || null,
+        target_date: targetDate || null,
       });
       setTitle("");
       setDescription("");
       setTimeframe("");
       setCategory("");
+      setTargetDate("");
       onCloseForm();
     } catch {
       toast.error(t("okr.errObjective"));
@@ -117,6 +120,17 @@ export function OkrBoard({ ownerId, canEdit, formOpen, onCloseForm }: Props) {
             maxLength={40}
             className={field}
           />
+          <label className="sm:col-span-2 grid gap-1">
+            <span className="text-[11px] font-semibold text-muted-foreground">
+              {t("okr.targetDate")}
+            </span>
+            <input
+              type="date"
+              value={targetDate}
+              onChange={(e) => setTargetDate(e.target.value)}
+              className={field}
+            />
+          </label>
           <button
             type="submit"
             className="justify-self-start rounded-full bg-accent px-5 py-2.5 text-xs font-bold text-accent-foreground sm:col-span-2"
@@ -218,6 +232,11 @@ function ObjectiveCard({
           </div>
           <p className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] text-muted-foreground">
             {objective.timeframe && <span>{objective.timeframe}</span>}
+            {objective.target_date && (
+              <span>
+                · {t("okr.targetDate")}: {objective.target_date}
+              </span>
+            )}
             {objective.category && <span>· {objective.category}</span>}
           </p>
           {objective.description && (

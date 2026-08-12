@@ -1,12 +1,19 @@
 import { useMemo, useState } from "react";
 import { useLang } from "@/lib/i18n";
-import { useTasksRange, type Task } from "@/lib/workspace-data";
+import { useGoals, useObjectives, useTasksRange, type Task } from "@/lib/workspace-data";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const iso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-/** Month grid of scheduled tasks, launch dates and reminders. */
-export function ContentCalendar({ ownerId }: { ownerId?: string }) {
+export type Milestone = { id: string; title: string; kind: "goal" | "okr"; date: string };
+
+type Props = {
+  ownerId?: string;
+  onOpenMilestone?: (m: Milestone) => void;
+};
+
+/** Month grid of scheduled tasks plus goal / OKR deadline milestones. */
+export function ContentCalendar({ ownerId, onOpenMilestone }: Props) {
   const { t, lang } = useLang();
   const locale = lang === "uk" ? "uk-UA" : "en-GB";
   const [cursor, setCursor] = useState(() => {
@@ -17,6 +24,8 @@ export function ContentCalendar({ ownerId }: { ownerId?: string }) {
   const start = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
   const end = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
   const tasks = useTasksRange(iso(start), iso(end), ownerId);
+  const goals = useGoals(ownerId, "all");
+  const objectives = useObjectives(ownerId, "all");
 
   const byDay = useMemo(() => {
     const map = new Map<string, Task[]>();
@@ -28,6 +37,22 @@ export function ContentCalendar({ ownerId }: { ownerId?: string }) {
     return map;
   }, [tasks.data]);
 
+  const milestonesByDay = useMemo(() => {
+    const map = new Map<string, Milestone[]>();
+    const push = (m: Milestone) => {
+      const list = map.get(m.date) ?? [];
+      list.push(m);
+      map.set(m.date, list);
+    };
+    for (const g of goals.data ?? []) {
+      if (g.target_date) push({ id: g.id, title: g.title, kind: "goal", date: g.target_date });
+    }
+    for (const o of objectives.data ?? []) {
+      if (o.target_date) push({ id: o.id, title: o.title, kind: "okr", date: o.target_date });
+    }
+    return map;
+  }, [goals.data, objectives.data]);
+
   const leading = (start.getDay() + 6) % 7; // Monday-first
   const cells = [
     ...Array.from({ length: leading }, () => null),
@@ -37,6 +62,8 @@ export function ContentCalendar({ ownerId }: { ownerId?: string }) {
 
   const shift = (delta: number) =>
     setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + delta, 1));
+
+  const monthMilestones = Array.from(milestonesByDay.values()).flat().length;
 
   return (
     <div>
@@ -62,7 +89,19 @@ export function ContentCalendar({ ownerId }: { ownerId?: string }) {
         </div>
       </header>
 
-      {(tasks.data?.length ?? 0) === 0 && (
+      <div className="mb-4 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="size-2 rounded-full bg-accent" /> {t("ws.tabPlan")}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="size-2 rounded-full bg-emerald-500" /> {t("cal.goal")}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="size-2 rounded-full bg-sky-500" /> {t("cal.okr")}
+        </span>
+      </div>
+
+      {(tasks.data?.length ?? 0) === 0 && monthMilestones === 0 && (
         <p className="mb-4 text-xs text-muted-foreground">{t("cal.none")}</p>
       )}
 
@@ -71,6 +110,7 @@ export function ContentCalendar({ ownerId }: { ownerId?: string }) {
           if (day === null) return <div key={`pad-${i}`} className="hidden sm:block" />;
           const key = iso(new Date(cursor.getFullYear(), cursor.getMonth(), day));
           const items = byDay.get(key) ?? [];
+          const marks = milestonesByDay.get(key) ?? [];
           return (
             <div
               key={key}
@@ -80,6 +120,21 @@ export function ContentCalendar({ ownerId }: { ownerId?: string }) {
             >
               <div className="text-[10px] font-bold text-muted-foreground sm:text-[11px]">{day}</div>
               <ul className="mt-1 space-y-1">
+                {marks.map((m) => (
+                  <li key={`${m.kind}-${m.id}`}>
+                    <button
+                      onClick={() => onOpenMilestone?.(m)}
+                      title={`${t("cal.milestone")}: ${m.title}`}
+                      className={`w-full truncate rounded px-1 py-0.5 text-left text-[9px] font-semibold transition-opacity hover:opacity-80 sm:text-[10px] ${
+                        m.kind === "goal"
+                          ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                          : "bg-sky-500/15 text-sky-700 dark:text-sky-400"
+                      }`}
+                    >
+                      ◆ {m.title}
+                    </button>
+                  </li>
+                ))}
                 {items.slice(0, 3).map((task) => (
                   <li
                     key={task.id}

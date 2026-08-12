@@ -82,11 +82,13 @@ export type Objective = {
   description: string | null;
   timeframe: string | null;
   category: string | null;
+  target_date: string | null;
   archived: boolean;
   status: LifecycleStatus;
   completed_at: string | null;
   key_results: KeyResult[];
 };
+
 
 
 export const krProgress = (kr: KeyResult) =>
@@ -373,7 +375,9 @@ export function useObjectives(ownerId?: string, filter: StatusFilter = "all") {
       const owner = await ownerOrSelf(ownerId);
       let query = supabase
         .from("objectives")
-        .select("id, title, description, timeframe, category, archived, status, completed_at")
+        .select(
+          "id, title, description, timeframe, category, target_date, archived, status, completed_at",
+        )
         .eq("user_id", owner)
         .eq("archived", false);
       if (filter !== "all") query = query.eq("status", filter);
@@ -413,6 +417,7 @@ export function useCreateObjective(ownerId?: string) {
       description: string | null;
       timeframe: string | null;
       category: string | null;
+      target_date?: string | null;
     }) => {
       const user_id = await ownerOrSelf(ownerId);
       const { error } = await supabase.from("objectives").insert({ ...input, user_id });
@@ -429,6 +434,7 @@ export function useUpdateObjective() {
       id: string;
       status?: LifecycleStatus;
       completed_at?: string | null;
+      target_date?: string | null;
     }) => {
       const { id, ...patch } = input;
       const { error } = await supabase.from("objectives").update(patch).eq("id", id);
