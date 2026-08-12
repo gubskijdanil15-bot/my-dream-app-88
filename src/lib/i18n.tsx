@@ -653,6 +653,18 @@ const dict = {
     "confirm.deleteEquipment": "Прибрати це обладнання зі списку?",
     "confirm.deleteLocation": "Прибрати цю локацію?",
     "confirm.completeGoal": "Позначити ціль завершеною?",
+    "plan.for": "План на",
+    "plan.today": "Сьогодні",
+    "plan.tomorrow": "Завтра",
+    "plan.week": "Наступні 7 днів",
+    "plan.pickDate": "Обрати дату",
+    "task.due": "Дата виконання",
+    "cal.goal": "Ціль",
+    "cal.okr": "OKR",
+    "cal.milestone": "Віха",
+    "okr.targetDate": "Цільова дата",
+    "idea.delete": "Видалити ідею",
+
 
 
 
