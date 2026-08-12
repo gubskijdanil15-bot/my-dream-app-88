@@ -82,11 +82,13 @@ export type Objective = {
   description: string | null;
   timeframe: string | null;
   category: string | null;
+  target_date: string | null;
   archived: boolean;
   status: LifecycleStatus;
   completed_at: string | null;
   key_results: KeyResult[];
 };
+
 
 
 export const krProgress = (kr: KeyResult) =>
