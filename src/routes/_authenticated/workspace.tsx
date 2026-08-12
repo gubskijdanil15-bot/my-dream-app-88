@@ -412,9 +412,9 @@ function Workspace() {
             {canEdit && primaryAction && (
               <button
                 onClick={primaryAction.onClick}
-                className="rounded-full bg-foreground px-4 py-2 text-xs font-bold text-background shadow-sm transition-colors hover:bg-accent active:scale-95"
+                className="rounded-full bg-accent px-5 py-2.5 text-sm font-bold text-accent-foreground shadow-md ring-2 ring-accent/25 transition-transform hover:opacity-95 active:scale-95"
               >
-                {primaryAction.open ? t("ws.close") : t(primaryAction.label)}
+                {primaryAction.open ? t("ws.close") : `+ ${t(primaryAction.label)}`}
               </button>
             )}
             {tab === "note" && (
