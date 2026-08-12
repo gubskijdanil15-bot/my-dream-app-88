@@ -157,6 +157,26 @@ export function IdeaHub({ ownerId, canEdit, formOpen, onCloseForm }: Props) {
                     {t("status.badge")}
                   </span>
                 )}
+                {canEdit && (
+                  <button
+                    onClick={() => setPending(idea)}
+                    aria-label={`${t("idea.delete")} — ${idea.title}`}
+                    title={t("idea.delete")}
+                    className="ml-auto flex size-8 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:border-destructive hover:text-destructive"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      className="size-4"
+                      aria-hidden
+                    >
+                      <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" />
+                    </svg>
+                  </button>
+                )}
               </div>
               {idea.detail && (
                 <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{idea.detail}</p>
@@ -174,15 +194,10 @@ export function IdeaHub({ ownerId, canEdit, formOpen, onCloseForm }: Props) {
                   >
                     {t(idea.status === "completed" ? "status.reopen" : "status.markDone")}
                   </button>
-                  <button
-                    onClick={() => setPending(idea)}
-                    className="text-[11px] font-semibold text-muted-foreground hover:text-destructive"
-                  >
-                    {t("ws.delete")}
-                  </button>
                 </div>
               )}
             </div>
+
           </article>
         ))}
       </div>
