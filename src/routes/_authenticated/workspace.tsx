@@ -132,7 +132,7 @@ function Workspace() {
   const deleteTask = useDeleteTask();
 
   const prefs = useNotificationPrefs();
-  useTaskReminders(tasks.data, !ownerId && !!prefs.data?.taskReminders);
+  useTaskReminders(todayTasks.data, !ownerId && !!prefs.data?.taskReminders);
 
   const [capture, setCapture] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
