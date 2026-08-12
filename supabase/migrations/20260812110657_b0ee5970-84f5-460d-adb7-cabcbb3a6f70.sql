@@ -1,0 +1,1 @@
+ALTER TABLE public.objectives ADD COLUMN IF NOT EXISTS target_date date;
