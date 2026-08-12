@@ -32,6 +32,7 @@ export function OkrBoard({ ownerId, canEdit, formOpen, onCloseForm }: Props) {
   const [description, setDescription] = useState("");
   const [timeframe, setTimeframe] = useState("");
   const [category, setCategory] = useState("");
+  const [targetDate, setTargetDate] = useState("");
   const [pendingDelete, setPendingDelete] = useState<Objective | null>(null);
 
   const field =
@@ -47,11 +48,13 @@ export function OkrBoard({ ownerId, canEdit, formOpen, onCloseForm }: Props) {
         description: description.trim() || null,
         timeframe: timeframe.trim() || null,
         category: category.trim() || null,
+        target_date: targetDate || null,
       });
       setTitle("");
       setDescription("");
       setTimeframe("");
       setCategory("");
+      setTargetDate("");
       onCloseForm();
     } catch {
       toast.error(t("okr.errObjective"));
