@@ -706,6 +706,39 @@ function Workspace() {
         {tab === "plan" && (
           <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-8 md:pb-10">
             <div className="mx-auto max-w-6xl">
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+                <div className="inline-flex rounded-full border border-border p-1">
+                  {(
+                    [
+                      [today, "plan.today"],
+                      [addDays(new Date(), 1), "plan.tomorrow"],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <button
+                      key={label}
+                      onClick={() => setPlanDate(value)}
+                      aria-pressed={planDate === value}
+                      className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
+                        planDate === value
+                          ? "bg-accent text-accent-foreground"
+                          : "text-muted-foreground hover:text-accent"
+                      }`}
+                    >
+                      {t(label)}
+                    </button>
+                  ))}
+                </div>
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>{t("plan.for")}</span>
+                  <input
+                    type="date"
+                    value={planDate}
+                    onChange={(e) => setPlanDate(e.target.value || today)}
+                    aria-label={t("plan.pickDate")}
+                    className="rounded-full border border-border bg-card px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                  />
+                </label>
+              </div>
               <div className="mb-5 flex flex-wrap items-center gap-2">
                 <div className="inline-flex rounded-full border border-border p-1">
                   {(
