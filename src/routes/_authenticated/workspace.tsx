@@ -697,7 +697,10 @@ function Workspace() {
         {tab === "calendar" && (
           <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-8 md:pb-10">
             <div className="mx-auto max-w-6xl">
-              <ContentCalendar ownerId={scope} />
+              <ContentCalendar
+                ownerId={scope}
+                onOpenMilestone={(m) => setTab(m.kind === "goal" ? "goals" : "okr")}
+              />
             </div>
           </div>
         )}
