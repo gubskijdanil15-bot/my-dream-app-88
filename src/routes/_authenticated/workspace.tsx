@@ -113,9 +113,11 @@ function Workspace() {
   const canEdit = ownerId ? activeJournal?.permission === "edit" : true;
 
   const [goalFilter, setGoalFilter] = useState<StatusFilter>("active");
+  const [planDate, setPlanDate] = useState(today);
   const notes = useNotes(scope);
   const goals = useGoals(scope, goalFilter);
-  const tasks = useTasks(today, scope);
+  const tasks = useTasks(planDate, scope);
+  const todayTasks = useTasks(today, scope);
   const objectives = useObjectives(scope);
   const boardTasks = useTasksRange(addDays(new Date(), -30), addDays(new Date(), 120), scope);
 
