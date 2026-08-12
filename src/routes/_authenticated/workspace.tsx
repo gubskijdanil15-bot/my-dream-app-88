@@ -229,7 +229,7 @@ function Workspace() {
 
   function reminderAt(): string | null {
     if (taskReminder === "none") return null;
-    const base = new Date(`${today}T${taskTime || "09:00"}:00`);
+    const base = new Date(`${planDate}T${taskTime || "09:00"}:00`);
     if (taskReminder === "1h") base.setHours(base.getHours() - 1);
     if (taskReminder === "1d") base.setDate(base.getDate() - 1);
     return base.toISOString();
@@ -243,7 +243,7 @@ function Workspace() {
       await createTask.mutateAsync({
         title: title.slice(0, 200),
         priority: taskPriority,
-        due_date: today,
+        due_date: planDate,
         due_time: taskTime || null,
         remind_at: reminderAt(),
         key_result_id: taskKr || null,
