@@ -333,13 +333,87 @@ const en = {
     "okr.targetDate": "Target date",
     "idea.delete": "Delete idea",
 
+    "ws.tabBoards": "Boards",
+    "ws.tabGuide": "Guide",
+    "nav.collapse": "Collapse all",
+    "nav.expand": "Expand all",
+    "ws.cancel": "Cancel",
+    "ws.saveChanges": "Save changes",
 
+    "boards.title": "Custom boards",
+    "boards.new": "New board",
+    "boards.name": "Board name",
+    "boards.desc": "Description (optional)",
+    "boards.empty": "No boards yet — create one for a shoot, an edit pipeline or a campaign.",
+    "boards.open": "Open board",
+    "boards.back": "All boards",
+    "boards.rename": "Rename",
+    "boards.addColumn": "Add column",
+    "boards.columnName": "Column name",
+    "boards.noColumns": "No columns yet — add your first stage.",
+    "boards.addCard": "Add card",
+    "boards.cardTitle": "Card title",
+    "boards.cardDetail": "Details (optional)",
+    "boards.moveTo": "Move to",
+    "boards.cards": "cards",
+    "confirm.deleteBoard": "This board, its columns and all its cards will be removed.",
+    "confirm.deleteColumn": "This column and its cards will be removed.",
+    "confirm.deleteCard": "This card will be removed from the board.",
+    "boards.err": "That didn't work",
 
+    "guide.title": "Getting started",
+    "guide.sub": "A short tour of everything Paperweight can do.",
+    "guide.step": "Step",
+    "guide.next": "Next",
+    "guide.prev": "Back",
+    "guide.done": "Finish",
+    "guide.notes.t": "Notes",
+    "guide.notes.b":
+      "Type a line in Quick capture and press enter. Open the note to format text, attach files, add links or write by hand and have it transcribed.",
+    "guide.okr.t": "Objectives & key results",
+    "guide.okr.b":
+      "Create an objective, then add key results with a target number. Update the current value and the objective's percentage recalculates itself. Completed objectives move to the history tab.",
+    "guide.plan.t": "Planning across dates",
+    "guide.plan.b":
+      "Pick any date to plan for, or switch to All tasks to see everything you've scheduled with its date, priority and status. Sort by date or priority to decide what's next.",
+    "guide.boards.t": "Custom boards",
+    "guide.boards.b":
+      "Build your own Kanban board with the columns you want — a shoot, an editing pipeline, a campaign. Add cards, move them between columns and delete them when they're done.",
+    "guide.cal.t": "Calendar",
+    "guide.cal.b":
+      "Scheduled tasks appear on the month view together with goal and OKR target dates. Tap a milestone to jump straight to it.",
+    "guide.ideas.t": "Ideas",
+    "guide.ideas.b":
+      "A quiet place for thoughts. Give each idea a title and a description, mark it done or delete it when it has served its purpose.",
 
+    "plan.day": "One day",
+    "plan.all": "All tasks",
+    "plan.sort": "Sort by",
+    "sort.date": "Date",
+    "sort.priority": "Priority",
+    "sort.status": "Status",
+    "task.noDate": "No date set",
+    "plan.allEmpty": "No tasks created yet.",
 
-  },
+    "okr.edit": "Edit",
+    "okr.editObjective": "Edit objective",
+    "okr.editKr": "Edit key result",
 
-  uk: {
+    "landing.tourTitle": "A quick look inside",
+    "landing.tour1t": "Objectives & key results",
+    "landing.tour1b": "Measure real progress instead of guessing at it.",
+    "landing.tour2t": "Custom boards",
+    "landing.tour2b": "Your own columns, your own workflow.",
+    "landing.tour3t": "Plan any day",
+    "landing.tour3b": "Schedule tasks ahead and see everything in one list.",
+    "landing.signup": "Create an account",
+    "landing.signin": "Sign in",
+  } as const;
+
+export type TranslationKey = keyof typeof en;
+type Dict = Partial<Record<TranslationKey, string>>;
+
+const uk: Dict = {
     "brand.tagline": "Нотатки · Цілі · План на день",
     "nav.signin": "Увійти",
     "landing.h1": "Тихий записник для справ, які ви весь час відкладаєте.",
