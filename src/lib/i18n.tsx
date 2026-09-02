@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
-export type Lang = "en" | "uk";
+export type Lang = "en" | "uk" | "ru";
+
+export const LANGS: readonly Lang[] = ["en", "uk", "ru"];
 
 const STORAGE_KEY = "paperweight-lang";
 
