@@ -6,8 +6,7 @@ export const LANGS: readonly Lang[] = ["en", "uk", "ru"];
 
 const STORAGE_KEY = "paperweight-lang";
 
-const dict = {
-  en: {
+const en = {
     "brand.tagline": "Notes · Goals · Daily plan",
     "nav.signin": "Sign in",
     "landing.h1": "A quiet notebook for the things you keep meaning to do.",
