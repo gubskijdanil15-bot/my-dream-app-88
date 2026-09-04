@@ -1237,8 +1237,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored === "uk" || stored === "en") setLangState(stored);
-    else if (navigator.language?.toLowerCase().startsWith("uk")) setLangState("uk");
+    if (stored && (LANGS as string[]).includes(stored)) {
+      setLangState(stored as Lang);
+      return;
+    }
+    const browser = navigator.language?.toLowerCase() ?? "";
+    if (browser.startsWith("uk")) setLangState("uk");
+    else if (browser.startsWith("ru")) setLangState("ru");
   }, []);
 
   useEffect(() => {
@@ -1250,7 +1255,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     window.localStorage.setItem(STORAGE_KEY, l);
   };
 
-  const t = (k: TranslationKey) => dict[lang][k] ?? dict.en[k];
+  const t = (k: TranslationKey) => dict[lang][k] ?? en[k];
 
   return <LangContext.Provider value={{ lang, setLang, t }}>{children}</LangContext.Provider>;
 }
