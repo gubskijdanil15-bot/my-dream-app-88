@@ -11,6 +11,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { KanbanBoard } from "@/components/kanban-board";
 import { ContentCalendar } from "@/components/content-calendar";
 import { OkrBoard } from "@/components/okr-board";
+import { OnboardingGuide } from "@/components/onboarding-guide";
 import { IdeaHub } from "@/components/idea-hub";
 import { AssetsBoard } from "@/components/assets-board";
 import { ReleaseRadar } from "@/components/release-radar";
@@ -61,7 +62,7 @@ export const Route = createFileRoute("/_authenticated/workspace")({
   component: Workspace,
 });
 
-type Tab = "notes" | "note" | "goals" | "okr" | "plan" | "calendar" | "ideas" | "assets";
+type Tab = "notes" | "note" | "goals" | "okr" | "plan" | "calendar" | "ideas" | "assets" | "guide";
 
 const ROLE_KEY = "paperweight-role";
 
@@ -290,7 +291,9 @@ function Workspace() {
               ? "idea.title"
               : tab === "assets"
                 ? "assets.title"
-                : "ws.notes";
+                : tab === "guide"
+                  ? "guide.title"
+                  : "ws.notes";
 
   const notebookSwitcher = (joined.data?.length ?? 0) > 0 && (
     <select
@@ -437,6 +440,7 @@ function Workspace() {
           {tabButton("ideas", t("ws.tabIdeas"))}
           {tabButton("assets", t("ws.tabAssets"))}
           {tabButton("calendar", t("ws.tabCalendar"))}
+          {tabButton("guide", t("ws.tabGuide"))}
         </div>
 
         <NotificationBanner />
@@ -689,6 +693,18 @@ function Workspace() {
                 formOpen={assetFormOpen}
                 onCloseForm={() => setAssetFormOpen(false)}
               />
+            </div>
+          </div>
+        )}
+
+        {/* GUIDE / ONBOARDING */}
+        {tab === "guide" && (
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-8 md:pb-10">
+            <div className="mx-auto max-w-6xl">
+              <p className="mb-5 max-w-xl text-sm leading-relaxed text-muted-foreground">
+                {t("guide.sub")}
+              </p>
+              <OnboardingGuide onOpen={(target) => setTab(target)} />
             </div>
           </div>
         )}
@@ -995,7 +1011,7 @@ function Workspace() {
         <button
           onClick={() => setMoreOpen(true)}
           className={`py-3.5 text-[11px] font-semibold transition-colors ${
-            tab === "ideas" || tab === "assets" || tab === "calendar"
+            tab === "ideas" || tab === "assets" || tab === "calendar" || tab === "guide"
               ? "text-accent"
               : "text-muted-foreground"
           }`}
@@ -1018,6 +1034,7 @@ function Workspace() {
                 ["ideas", "ws.tabIdeas"],
                 ["assets", "ws.tabAssets"],
                 ["calendar", "ws.tabCalendar"],
+                ["guide", "ws.tabGuide"],
               ] as const
             ).map(([key, label]) => (
               <button
