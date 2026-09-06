@@ -6,7 +6,7 @@
 - [ ] Language switcher supports EN / UK / RU
 - [ ] Branding: title/metadata = Paperweight; favicon + touch icon "PW" white on black
 - [ ] Landing page overhaul: modern hero, Sign in / Sign up / Access workspace, interactive mini-tour (OKR, Custom Boards, Dynamic Planning)
-- [ ] New "Guide / Onboarding" tab with step-by-step walkthrough (Notes, OKR, Planning, Boards, Calendar, Ideas), fully translated
+- [x] New "Guide / Onboarding" tab with step-by-step walkthrough (Notes, OKR, Planning, Boards, Calendar, Ideas), fully translated
 - [ ] Remove "Goals" tab (fold into OKR) and "Resources/Assets" tab
 - [ ] Global "Collapse all" navigation control
 - [ ] Plan tab: All-tasks view with date tag per task + sort by date/priority/status
