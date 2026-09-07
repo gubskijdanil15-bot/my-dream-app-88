@@ -203,9 +203,34 @@ function Workspace() {
   const sameRole = (a: string | null, b: string) =>
     !!a && (a === b || roleText(a).toLowerCase() === b.trim().toLowerCase());
 
-  const visibleTasks = (tasks.data ?? []).filter(
-    (x) => !onlyMine || !myRole.trim() || sameRole(x.assigned_role, myRole),
-  );
+  const PRIORITY_RANK = { high: 0, medium: 1, low: 2 } as const;
+
+  const sourceTasks = planScope === "all" ? (allTasks.data ?? []) : (tasks.data ?? []);
+
+  const visibleTasks = sourceTasks
+    .filter((x) => !onlyMine || !myRole.trim() || sameRole(x.assigned_role, myRole))
+    .slice()
+    .sort((a, b) => {
+      if (planScope !== "all") return 0;
+      if (planSort === "priority")
+        return PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] ||
+          a.due_date.localeCompare(b.due_date);
+      if (planSort === "status")
+        return Number(a.done) - Number(b.done) || a.due_date.localeCompare(b.due_date);
+      return a.due_date.localeCompare(b.due_date) || (a.due_time ?? "").localeCompare(b.due_time ?? "");
+    });
+
+  const dateTag = (iso: string) => {
+    if (!iso) return t("task.noDate");
+    if (iso === today) return t("plan.today");
+    if (iso === addDays(new Date(), 1)) return t("plan.tomorrow");
+    return new Date(`${iso}T00:00:00`).toLocaleDateString(locale, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
 
   async function handleSignOut() {
     await queryClient.cancelQueries();
