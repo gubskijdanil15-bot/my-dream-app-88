@@ -286,6 +286,24 @@ export function useTasksRange(from: string, to: string, ownerId?: string) {
   });
 }
 
+/** Every task the owner has, regardless of date — used by the unrestricted Plan list. */
+export function useAllTasks(ownerId?: string) {
+  return useQuery({
+    queryKey: ["tasks", "all", ownerId ?? "me"],
+    queryFn: async (): Promise<Task[]> => {
+      const owner = await ownerOrSelf(ownerId);
+      const { data, error } = await supabase
+        .from("tasks")
+        .select(TASK_COLUMNS)
+        .eq("user_id", owner)
+        .order("due_date", { ascending: true })
+        .order("due_time", { ascending: true, nullsFirst: true });
+      if (error) throw error;
+      return (data ?? []).map(mapTask);
+    },
+  });
+}
+
 export function useCreateTask(ownerId?: string) {
   const qc = useQueryClient();
   return useMutation({
