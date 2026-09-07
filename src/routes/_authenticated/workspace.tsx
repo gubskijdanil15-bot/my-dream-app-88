@@ -139,6 +139,10 @@ function Workspace() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("notes");
   const [planView, setPlanView] = useState<PlanView>("list");
+  const [planScope, setPlanScope] = useState<PlanScope>("day");
+  const [planSort, setPlanSort] = useState<PlanSort>("date");
+  const [collapsed, setCollapsed] = useState(false);
+
   const [okrFormOpen, setOkrFormOpen] = useState(false);
   const [ideaFormOpen, setIdeaFormOpen] = useState(false);
   const [assetFormOpen, setAssetFormOpen] = useState(false);
