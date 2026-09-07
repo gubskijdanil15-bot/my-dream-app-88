@@ -729,17 +729,17 @@ function Workspace() {
                 <div className="inline-flex rounded-full border border-border p-1">
                   {(
                     [
-                      [today, "plan.today"],
-                      [addDays(new Date(), 1), "plan.tomorrow"],
+                      ["day", "plan.day"],
+                      ["all", "plan.all"],
                     ] as const
                   ).map(([value, label]) => (
                     <button
-                      key={label}
-                      onClick={() => setPlanDate(value)}
-                      aria-pressed={planDate === value}
+                      key={value}
+                      onClick={() => setPlanScope(value)}
+                      aria-pressed={planScope === value}
                       className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
-                        planDate === value
-                          ? "bg-accent text-accent-foreground"
+                        planScope === value
+                          ? "bg-foreground text-background"
                           : "text-muted-foreground hover:text-accent"
                       }`}
                     >
@@ -747,6 +747,29 @@ function Workspace() {
                     </button>
                   ))}
                 </div>
+                {planScope === "day" && (
+                  <div className="inline-flex rounded-full border border-border p-1">
+                    {(
+                      [
+                        [today, "plan.today"],
+                        [addDays(new Date(), 1), "plan.tomorrow"],
+                      ] as const
+                    ).map(([value, label]) => (
+                      <button
+                        key={label}
+                        onClick={() => setPlanDate(value)}
+                        aria-pressed={planDate === value}
+                        className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
+                          planDate === value
+                            ? "bg-accent text-accent-foreground"
+                            : "text-muted-foreground hover:text-accent"
+                        }`}
+                      >
+                        {t(label)}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <label className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span>{t("plan.for")}</span>
                   <input
@@ -757,7 +780,22 @@ function Workspace() {
                     className="rounded-full border border-border bg-card px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 </label>
+                {planScope === "all" && planView === "list" && (
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>{t("plan.sort")}</span>
+                    <select
+                      value={planSort}
+                      onChange={(e) => setPlanSort(e.target.value as PlanSort)}
+                      className="rounded-full border border-border bg-card px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                    >
+                      <option value="date">{t("sort.date")}</option>
+                      <option value="priority">{t("sort.priority")}</option>
+                      <option value="status">{t("sort.status")}</option>
+                    </select>
+                  </label>
+                )}
               </div>
+
               <div className="mb-5 flex flex-wrap items-center gap-2">
                 <div className="inline-flex rounded-full border border-border p-1">
                   {(
