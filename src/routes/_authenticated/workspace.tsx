@@ -852,7 +852,7 @@ function Workspace() {
                     className="min-w-0 max-w-[11rem] rounded-full border border-border bg-card px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 )}
-                {canEdit && planView === "list" && (tasks.data?.some((x) => x.done) ?? false) && (
+                {canEdit && planView === "list" && sourceTasks.some((x) => x.done) && (
                   <button
                     onClick={() => setPendingClear(true)}
                     className="ml-auto rounded-full border border-border px-4 py-2 text-[11px] font-bold hover:border-destructive hover:text-destructive"
