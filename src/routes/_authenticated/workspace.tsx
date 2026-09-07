@@ -124,6 +124,8 @@ function Workspace() {
   const todayTasks = useTasks(today, scope);
   const objectives = useObjectives(scope);
   const boardTasks = useTasksRange(addDays(new Date(), -30), addDays(new Date(), 120), scope);
+  const allTasks = useAllTasks(scope);
+
 
   const createNote = useCreateNote(scope);
   const updateNote = useUpdateNote();
