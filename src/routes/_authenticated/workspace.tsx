@@ -77,7 +77,10 @@ const roleLabel = {
 
 const ROLE_LIST_ID = "role-suggestions";
 type PlanView = "list" | "board";
+type PlanScope = "day" | "all";
+type PlanSort = "date" | "priority" | "status";
 type Reminder = "none" | "at" | "1h" | "1d";
+
 
 function addDays(base: Date, days: number) {
   const d = new Date(base);
