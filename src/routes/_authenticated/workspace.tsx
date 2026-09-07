@@ -468,16 +468,19 @@ function Workspace() {
         </header>
 
         {/* Tabs — scrollable on tablet, wrapped on desktop */}
-        <div className="hidden shrink-0 items-center gap-2 overflow-x-auto border-b border-border px-8 py-2.5 md:flex">
-          {tabButton("notes", t("ws.tabNotes"), notes.data?.length ?? 0)}
-          {tabButton("goals", t("ws.tabGoals"), goals.data?.length ?? 0)}
-          {tabButton("okr", t("ws.tabOkr"), objectives.data?.length ?? 0)}
-          {tabButton("plan", t("ws.tabPlan"), tasks.data?.filter((x) => !x.done).length ?? 0)}
-          {tabButton("ideas", t("ws.tabIdeas"))}
-          {tabButton("assets", t("ws.tabAssets"))}
-          {tabButton("calendar", t("ws.tabCalendar"))}
-          {tabButton("guide", t("ws.tabGuide"))}
-        </div>
+        {!collapsed && (
+          <div className="hidden shrink-0 items-center gap-2 overflow-x-auto border-b border-border px-8 py-2.5 md:flex">
+            {tabButton("notes", t("ws.tabNotes"), notes.data?.length ?? 0)}
+            {tabButton("goals", t("ws.tabGoals"), goals.data?.length ?? 0)}
+            {tabButton("okr", t("ws.tabOkr"), objectives.data?.length ?? 0)}
+            {tabButton("plan", t("ws.tabPlan"), tasks.data?.filter((x) => !x.done).length ?? 0)}
+            {tabButton("ideas", t("ws.tabIdeas"))}
+            {tabButton("assets", t("ws.tabAssets"))}
+            {tabButton("calendar", t("ws.tabCalendar"))}
+            {tabButton("guide", t("ws.tabGuide"))}
+          </div>
+        )}
+
 
         <NotificationBanner />
 
