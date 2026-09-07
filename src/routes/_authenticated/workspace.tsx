@@ -33,6 +33,8 @@ import {
   useObjectives,
   useTasks,
   useTasksRange,
+  useAllTasks,
+
   useToggleTask,
   useUpdateGoal,
   useUpdateNote,
@@ -77,7 +79,10 @@ const roleLabel = {
 
 const ROLE_LIST_ID = "role-suggestions";
 type PlanView = "list" | "board";
+type PlanScope = "day" | "all";
+type PlanSort = "date" | "priority" | "status";
 type Reminder = "none" | "at" | "1h" | "1d";
+
 
 function addDays(base: Date, days: number) {
   const d = new Date(base);
@@ -121,6 +126,8 @@ function Workspace() {
   const todayTasks = useTasks(today, scope);
   const objectives = useObjectives(scope);
   const boardTasks = useTasksRange(addDays(new Date(), -30), addDays(new Date(), 120), scope);
+  const allTasks = useAllTasks(scope);
+
 
   const createNote = useCreateNote(scope);
   const updateNote = useUpdateNote();
@@ -139,6 +146,10 @@ function Workspace() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("notes");
   const [planView, setPlanView] = useState<PlanView>("list");
+  const [planScope, setPlanScope] = useState<PlanScope>("day");
+  const [planSort, setPlanSort] = useState<PlanSort>("date");
+  const [collapsed, setCollapsed] = useState(false);
+
   const [okrFormOpen, setOkrFormOpen] = useState(false);
   const [ideaFormOpen, setIdeaFormOpen] = useState(false);
   const [assetFormOpen, setAssetFormOpen] = useState(false);
@@ -203,9 +214,34 @@ function Workspace() {
   const sameRole = (a: string | null, b: string) =>
     !!a && (a === b || roleText(a).toLowerCase() === b.trim().toLowerCase());
 
-  const visibleTasks = (tasks.data ?? []).filter(
-    (x) => !onlyMine || !myRole.trim() || sameRole(x.assigned_role, myRole),
-  );
+  const PRIORITY_RANK = { high: 0, medium: 1, low: 2 } as const;
+
+  const sourceTasks = planScope === "all" ? (allTasks.data ?? []) : (tasks.data ?? []);
+
+  const visibleTasks = sourceTasks
+    .filter((x) => !onlyMine || !myRole.trim() || sameRole(x.assigned_role, myRole))
+    .slice()
+    .sort((a, b) => {
+      if (planScope !== "all") return 0;
+      if (planSort === "priority")
+        return PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] ||
+          a.due_date.localeCompare(b.due_date);
+      if (planSort === "status")
+        return Number(a.done) - Number(b.done) || a.due_date.localeCompare(b.due_date);
+      return a.due_date.localeCompare(b.due_date) || (a.due_time ?? "").localeCompare(b.due_time ?? "");
+    });
+
+  const dateTag = (iso: string) => {
+    if (!iso) return t("task.noDate");
+    if (iso === today) return t("plan.today");
+    if (iso === addDays(new Date(), 1)) return t("plan.tomorrow");
+    return new Date(`${iso}T00:00:00`).toLocaleDateString(locale, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
 
   async function handleSignOut() {
     await queryClient.cancelQueries();
@@ -398,20 +434,32 @@ function Workspace() {
             <h1 className="truncate text-xl font-extrabold tracking-tight sm:text-2xl">
               {t(headerTitle)}
             </h1>
-            <p className="truncate text-xs text-muted-foreground sm:text-sm">
-              {longDate(new Date())}
-            </p>
-            {notebookSwitcher}
-            <div className="mt-2 flex max-w-full">
-              <ReleaseRadar tasks={boardTasks.data ?? []} />
-            </div>
+            {!collapsed && (
+              <>
+                <p className="truncate text-xs text-muted-foreground sm:text-sm">
+                  {longDate(new Date())}
+                </p>
+                {notebookSwitcher}
+                <div className="mt-2 flex max-w-full">
+                  <ReleaseRadar tasks={boardTasks.data ?? []} />
+                </div>
+              </>
+            )}
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <button
+              onClick={() => setCollapsed((v) => !v)}
+              aria-pressed={collapsed}
+              className="rounded-full border border-border px-4 py-2 text-[11px] font-bold text-muted-foreground hover:border-accent hover:text-accent"
+            >
+              {t(collapsed ? "nav.expand" : "nav.collapse")}
+            </button>
             {!canEdit && (
               <span className="rounded-full bg-muted px-3 py-1.5 text-[11px] text-muted-foreground">
                 {t("share.readOnly")}
               </span>
             )}
+
             {canEdit && primaryAction && (
               <button
                 onClick={primaryAction.onClick}
@@ -432,18 +480,48 @@ function Workspace() {
         </header>
 
         {/* Tabs — scrollable on tablet, wrapped on desktop */}
-        <div className="hidden shrink-0 items-center gap-2 overflow-x-auto border-b border-border px-8 py-2.5 md:flex">
-          {tabButton("notes", t("ws.tabNotes"), notes.data?.length ?? 0)}
-          {tabButton("goals", t("ws.tabGoals"), goals.data?.length ?? 0)}
-          {tabButton("okr", t("ws.tabOkr"), objectives.data?.length ?? 0)}
-          {tabButton("plan", t("ws.tabPlan"), tasks.data?.filter((x) => !x.done).length ?? 0)}
-          {tabButton("ideas", t("ws.tabIdeas"))}
-          {tabButton("assets", t("ws.tabAssets"))}
-          {tabButton("calendar", t("ws.tabCalendar"))}
-          {tabButton("guide", t("ws.tabGuide"))}
-        </div>
+        {!collapsed && (
+          <div className="hidden shrink-0 items-center gap-2 overflow-x-auto border-b border-border px-8 py-2.5 md:flex">
+            {tabButton("notes", t("ws.tabNotes"), notes.data?.length ?? 0)}
+            {tabButton("goals", t("ws.tabGoals"), goals.data?.length ?? 0)}
+            {tabButton("okr", t("ws.tabOkr"), objectives.data?.length ?? 0)}
+            {tabButton("plan", t("ws.tabPlan"), tasks.data?.filter((x) => !x.done).length ?? 0)}
+            {tabButton("ideas", t("ws.tabIdeas"))}
+            {tabButton("assets", t("ws.tabAssets"))}
+            {tabButton("calendar", t("ws.tabCalendar"))}
+            {tabButton("guide", t("ws.tabGuide"))}
+          </div>
+        )}
+        {collapsed && (
+          <div className="hidden shrink-0 items-center gap-2 border-b border-border px-8 py-2 md:flex">
+            <select
+              value={tab === "note" ? "notes" : tab}
+              onChange={(e) => setTab(e.target.value as Tab)}
+              aria-label={t("ws.tabNotes")}
+              className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              {(
+                [
+                  ["notes", "ws.tabNotes"],
+                  ["goals", "ws.tabGoals"],
+                  ["okr", "ws.tabOkr"],
+                  ["plan", "ws.tabPlan"],
+                  ["ideas", "ws.tabIdeas"],
+                  ["assets", "ws.tabAssets"],
+                  ["calendar", "ws.tabCalendar"],
+                  ["guide", "ws.tabGuide"],
+                ] as const
+              ).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {t(label)}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
-        <NotificationBanner />
+        {!collapsed && <NotificationBanner />}
+
 
         {/* NOTES */}
         {onNotes && (
@@ -729,17 +807,17 @@ function Workspace() {
                 <div className="inline-flex rounded-full border border-border p-1">
                   {(
                     [
-                      [today, "plan.today"],
-                      [addDays(new Date(), 1), "plan.tomorrow"],
+                      ["day", "plan.day"],
+                      ["all", "plan.all"],
                     ] as const
                   ).map(([value, label]) => (
                     <button
-                      key={label}
-                      onClick={() => setPlanDate(value)}
-                      aria-pressed={planDate === value}
+                      key={value}
+                      onClick={() => setPlanScope(value)}
+                      aria-pressed={planScope === value}
                       className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
-                        planDate === value
-                          ? "bg-accent text-accent-foreground"
+                        planScope === value
+                          ? "bg-foreground text-background"
                           : "text-muted-foreground hover:text-accent"
                       }`}
                     >
@@ -747,6 +825,29 @@ function Workspace() {
                     </button>
                   ))}
                 </div>
+                {planScope === "day" && (
+                  <div className="inline-flex rounded-full border border-border p-1">
+                    {(
+                      [
+                        [today, "plan.today"],
+                        [addDays(new Date(), 1), "plan.tomorrow"],
+                      ] as const
+                    ).map(([value, label]) => (
+                      <button
+                        key={label}
+                        onClick={() => setPlanDate(value)}
+                        aria-pressed={planDate === value}
+                        className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
+                          planDate === value
+                            ? "bg-accent text-accent-foreground"
+                            : "text-muted-foreground hover:text-accent"
+                        }`}
+                      >
+                        {t(label)}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <label className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span>{t("plan.for")}</span>
                   <input
@@ -757,7 +858,22 @@ function Workspace() {
                     className="rounded-full border border-border bg-card px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 </label>
+                {planScope === "all" && planView === "list" && (
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>{t("plan.sort")}</span>
+                    <select
+                      value={planSort}
+                      onChange={(e) => setPlanSort(e.target.value as PlanSort)}
+                      className="rounded-full border border-border bg-card px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+                    >
+                      <option value="date">{t("sort.date")}</option>
+                      <option value="priority">{t("sort.priority")}</option>
+                      <option value="status">{t("sort.status")}</option>
+                    </select>
+                  </label>
+                )}
               </div>
+
               <div className="mb-5 flex flex-wrap items-center gap-2">
                 <div className="inline-flex rounded-full border border-border p-1">
                   {(
@@ -814,7 +930,7 @@ function Workspace() {
                     className="min-w-0 max-w-[11rem] rounded-full border border-border bg-card px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 )}
-                {canEdit && planView === "list" && (tasks.data?.some((x) => x.done) ?? false) && (
+                {canEdit && planView === "list" && sourceTasks.some((x) => x.done) && (
                   <button
                     onClick={() => setPendingClear(true)}
                     className="ml-auto rounded-full border border-border px-4 py-2 text-[11px] font-bold hover:border-destructive hover:text-destructive"
@@ -918,8 +1034,11 @@ function Workspace() {
 
                   <div className="space-y-1">
                     {visibleTasks.length === 0 && (
-                      <p className="py-3 text-xs text-muted-foreground">{t("ws.emptyTasks")}</p>
+                      <p className="py-3 text-xs text-muted-foreground">
+                        {t(planScope === "all" ? "plan.allEmpty" : "ws.emptyTasks")}
+                      </p>
                     )}
+
                     {visibleTasks.map((task) => {
                       const kr = keyResults.find((k) => k.id === task.key_result_id);
                       return (
@@ -950,11 +1069,17 @@ function Workspace() {
                           >
                             {task.title}
                           </span>
+                          {planScope === "all" && (
+                            <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
+                              {dateTag(task.due_date)}
+                            </span>
+                          )}
                           {task.due_time && (
                             <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px]">
                               {task.due_time.slice(0, 5)}
                             </span>
                           )}
+
                           {kr && (
                             <span className="max-w-full truncate rounded-full bg-accent/10 px-2 py-0.5 text-[11px] text-accent">
                               {kr.title}
