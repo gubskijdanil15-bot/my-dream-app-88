@@ -950,11 +950,17 @@ function Workspace() {
                           >
                             {task.title}
                           </span>
+                          {planScope === "all" && (
+                            <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
+                              {dateTag(task.due_date)}
+                            </span>
+                          )}
                           {task.due_time && (
                             <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px]">
                               {task.due_time.slice(0, 5)}
                             </span>
                           )}
+
                           {kr && (
                             <span className="max-w-full truncate rounded-full bg-accent/10 px-2 py-0.5 text-[11px] text-accent">
                               {kr.title}
