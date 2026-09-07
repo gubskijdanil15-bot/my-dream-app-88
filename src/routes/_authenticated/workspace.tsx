@@ -492,9 +492,36 @@ function Workspace() {
             {tabButton("guide", t("ws.tabGuide"))}
           </div>
         )}
+        {collapsed && (
+          <div className="hidden shrink-0 items-center gap-2 border-b border-border px-8 py-2 md:flex">
+            <select
+              value={tab === "note" ? "notes" : tab}
+              onChange={(e) => setTab(e.target.value as Tab)}
+              aria-label={t("ws.tabNotes")}
+              className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-ring"
+            >
+              {(
+                [
+                  ["notes", "ws.tabNotes"],
+                  ["goals", "ws.tabGoals"],
+                  ["okr", "ws.tabOkr"],
+                  ["plan", "ws.tabPlan"],
+                  ["ideas", "ws.tabIdeas"],
+                  ["assets", "ws.tabAssets"],
+                  ["calendar", "ws.tabCalendar"],
+                  ["guide", "ws.tabGuide"],
+                ] as const
+              ).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {t(label)}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
+        {!collapsed && <NotificationBanner />}
 
-        <NotificationBanner />
 
         {/* NOTES */}
         {onNotes && (
