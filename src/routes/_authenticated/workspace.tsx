@@ -918,8 +918,11 @@ function Workspace() {
 
                   <div className="space-y-1">
                     {visibleTasks.length === 0 && (
-                      <p className="py-3 text-xs text-muted-foreground">{t("ws.emptyTasks")}</p>
+                      <p className="py-3 text-xs text-muted-foreground">
+                        {t(planScope === "all" ? "plan.allEmpty" : "ws.emptyTasks")}
+                      </p>
                     )}
+
                     {visibleTasks.map((task) => {
                       const kr = keyResults.find((k) => k.id === task.key_result_id);
                       return (
