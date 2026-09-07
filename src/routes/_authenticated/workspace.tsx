@@ -434,20 +434,32 @@ function Workspace() {
             <h1 className="truncate text-xl font-extrabold tracking-tight sm:text-2xl">
               {t(headerTitle)}
             </h1>
-            <p className="truncate text-xs text-muted-foreground sm:text-sm">
-              {longDate(new Date())}
-            </p>
-            {notebookSwitcher}
-            <div className="mt-2 flex max-w-full">
-              <ReleaseRadar tasks={boardTasks.data ?? []} />
-            </div>
+            {!collapsed && (
+              <>
+                <p className="truncate text-xs text-muted-foreground sm:text-sm">
+                  {longDate(new Date())}
+                </p>
+                {notebookSwitcher}
+                <div className="mt-2 flex max-w-full">
+                  <ReleaseRadar tasks={boardTasks.data ?? []} />
+                </div>
+              </>
+            )}
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <button
+              onClick={() => setCollapsed((v) => !v)}
+              aria-pressed={collapsed}
+              className="rounded-full border border-border px-4 py-2 text-[11px] font-bold text-muted-foreground hover:border-accent hover:text-accent"
+            >
+              {t(collapsed ? "nav.expand" : "nav.collapse")}
+            </button>
             {!canEdit && (
               <span className="rounded-full bg-muted px-3 py-1.5 text-[11px] text-muted-foreground">
                 {t("share.readOnly")}
               </span>
             )}
+
             {canEdit && primaryAction && (
               <button
                 onClick={primaryAction.onClick}
