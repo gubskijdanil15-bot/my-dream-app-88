@@ -10,7 +10,7 @@
 - [ ] Remove "Goals" tab (fold into OKR) and "Resources/Assets" tab
 - [ ] Global "Collapse all" navigation control
 - [ ] Plan tab: All-tasks view with date tag per task + sort by date/priority/status
-- [ ] Ideas: remove vote counter UI, title + description only
-- [ ] OKR: full edit modal for objectives and key results (edit/add/delete KRs)
+- [x] Ideas: remove vote counter UI, title + description only
+- [x] OKR: full edit modal for objectives and key results (edit/add/delete KRs)
 - [ ] Boards tab: create/rename/delete boards, custom columns, cards with move/edit/delete
 - [ ] Responsive check on mobile / tablet / desktop
