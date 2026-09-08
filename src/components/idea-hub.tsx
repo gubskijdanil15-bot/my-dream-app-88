@@ -8,7 +8,6 @@ import {
   useCreateIdea,
   useDeleteIdea,
   useIdeas,
-  useToggleVote,
   useUpdateIdea,
   type Idea,
   type IdeaTag,
@@ -31,7 +30,6 @@ export function IdeaHub({ ownerId, canEdit, formOpen, onCloseForm }: Props) {
   const createIdea = useCreateIdea(ownerId);
   const updateIdea = useUpdateIdea();
   const deleteIdea = useDeleteIdea();
-  const vote = useToggleVote(ownerId);
 
   const [title, setTitle] = useState("");
   const [detail, setDetail] = useState("");
