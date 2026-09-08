@@ -8,7 +8,6 @@ import {
   useCreateIdea,
   useDeleteIdea,
   useIdeas,
-  useToggleVote,
   useUpdateIdea,
   type Idea,
   type IdeaTag,
@@ -31,7 +30,6 @@ export function IdeaHub({ ownerId, canEdit, formOpen, onCloseForm }: Props) {
   const createIdea = useCreateIdea(ownerId);
   const updateIdea = useUpdateIdea();
   const deleteIdea = useDeleteIdea();
-  const vote = useToggleVote(ownerId);
 
   const [title, setTitle] = useState("");
   const [detail, setDetail] = useState("");
@@ -131,21 +129,8 @@ export function IdeaHub({ ownerId, canEdit, formOpen, onCloseForm }: Props) {
         {ideas.data?.map((idea) => (
           <article
             key={idea.id}
-            className="animate-entry grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 rounded-2xl border border-border bg-card p-4"
+            className="animate-entry rounded-2xl border border-border bg-card p-4"
           >
-            <button
-              onClick={() => vote.mutate({ ideaId: idea.id, voted: idea.voted })}
-              aria-pressed={idea.voted}
-              aria-label={`${idea.title} — ${t("idea.votes")}`}
-              className={`flex w-12 shrink-0 flex-col items-center rounded-xl border px-2 py-1.5 text-xs font-bold transition-colors ${
-                idea.voted
-                  ? "border-accent bg-accent/10 text-accent"
-                  : "border-border text-muted-foreground hover:border-accent hover:text-accent"
-              }`}
-            >
-              <span aria-hidden>▲</span>
-              {idea.votes}
-            </button>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="min-w-0 break-words text-sm font-bold">{idea.title}</h3>
