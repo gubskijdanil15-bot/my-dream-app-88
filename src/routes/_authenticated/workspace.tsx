@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { RulerProgress } from "@/components/ruler-progress";
+
 import { LanguageToggle } from "@/components/language-toggle";
 import { NoteEditor } from "@/components/note-editor";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -15,7 +15,7 @@ import { OnboardingGuide } from "@/components/onboarding-guide";
 import { IdeaHub } from "@/components/idea-hub";
 import { AssetsBoard } from "@/components/assets-board";
 import { ReleaseRadar } from "@/components/release-radar";
-import { StatusTabs } from "@/components/status-tabs";
+
 import { NotificationBanner } from "@/components/notification-settings";
 
 import { useLang, type TranslationKey } from "@/lib/i18n";
@@ -23,12 +23,10 @@ import { useJoinedJournals } from "@/lib/journal-data";
 import { useNotificationPrefs, useTaskReminders } from "@/lib/notifications";
 import {
   todayISO,
-  useCreateGoal,
   useCreateNote,
   useCreateTask,
   useDeleteNote,
   useDeleteTask,
-  useGoals,
   useNotes,
   useObjectives,
   useTasks,
@@ -36,13 +34,11 @@ import {
   useAllTasks,
 
   useToggleTask,
-  useUpdateGoal,
   useUpdateNote,
   useUpdateTask,
   ROLES,
   type Role,
   type Stage,
-  type StatusFilter,
   type Task,
 } from "@/lib/workspace-data";
 
@@ -64,7 +60,7 @@ export const Route = createFileRoute("/_authenticated/workspace")({
   component: Workspace,
 });
 
-type Tab = "notes" | "note" | "goals" | "okr" | "plan" | "calendar" | "ideas" | "assets" | "guide";
+type Tab = "notes" | "note" | "okr" | "plan" | "calendar" | "ideas" | "assets" | "guide";
 
 const ROLE_KEY = "paperweight-role";
 
@@ -118,10 +114,8 @@ function Workspace() {
   const scope = ownerId ?? undefined;
   const canEdit = ownerId ? activeJournal?.permission === "edit" : true;
 
-  const [goalFilter, setGoalFilter] = useState<StatusFilter>("active");
   const [planDate, setPlanDate] = useState(today);
   const notes = useNotes(scope);
-  const goals = useGoals(scope, goalFilter);
   const tasks = useTasks(planDate, scope);
   const todayTasks = useTasks(today, scope);
   const objectives = useObjectives(scope);
@@ -132,8 +126,6 @@ function Workspace() {
   const createNote = useCreateNote(scope);
   const updateNote = useUpdateNote();
   const deleteNote = useDeleteNote();
-  const createGoal = useCreateGoal(scope);
-  const updateGoal = useUpdateGoal();
   const createTask = useCreateTask(scope);
   const updateTask = useUpdateTask();
   const toggleTask = useToggleTask();
@@ -157,16 +149,13 @@ function Workspace() {
   const [onlyMine, setOnlyMine] = useState(false);
   const [myRole, setMyRole] = useState<Role | "">("");
   const [taskRole, setTaskRole] = useState<Role | "">("");
-  const [pendingGoal, setPendingGoal] = useState<{ id: string; title: string } | null>(null);
+  
 
   const [taskTitle, setTaskTitle] = useState("");
   const [taskPriority, setTaskPriority] = useState<Task["priority"]>("medium");
   const [taskTime, setTaskTime] = useState("");
   const [taskReminder, setTaskReminder] = useState<Reminder>("none");
   const [taskKr, setTaskKr] = useState("");
-  const [goalOpen, setGoalOpen] = useState(false);
-  const [goalTitle, setGoalTitle] = useState("");
-  const [goalDate, setGoalDate] = useState("");
 
   const [pendingNote, setPendingNote] = useState<string | null>(null);
   const [pendingTask, setPendingTask] = useState<Task | null>(null);
@@ -294,30 +283,12 @@ function Workspace() {
     }
   }
 
-  async function submitGoal(e: React.FormEvent) {
-    e.preventDefault();
-    const title = goalTitle.trim();
-    if (!title) return;
-    try {
-      await createGoal.mutateAsync({
-        title: title.slice(0, 160),
-        target_date: goalDate || null,
-      });
-      setGoalTitle("");
-      setGoalDate("");
-      setGoalOpen(false);
-    } catch {
-      toast.error(t("ws.errGoal"));
-    }
-  }
 
   const priorityLabel = (p: Task["priority"]) =>
     t(p === "high" ? "priority.high" : p === "low" ? "priority.low" : "priority.medium");
 
   const headerTitle: TranslationKey =
-    tab === "goals"
-      ? "ws.activeGoals"
-      : tab === "plan"
+    tab === "plan"
         ? "ws.todayList"
         : tab === "okr"
           ? "okr.title"
@@ -367,9 +338,7 @@ function Workspace() {
   );
 
   const primaryAction: { label: TranslationKey; open: boolean; onClick: () => void } | null =
-    tab === "goals"
-      ? { label: "ws.newGoal", open: goalOpen, onClick: () => setGoalOpen((v) => !v) }
-      : tab === "okr"
+    tab === "okr"
         ? { label: "okr.new", open: okrFormOpen, onClick: () => setOkrFormOpen((v) => !v) }
         : tab === "ideas"
           ? { label: "idea.new", open: ideaFormOpen, onClick: () => setIdeaFormOpen((v) => !v) }
@@ -483,7 +452,7 @@ function Workspace() {
         {!collapsed && (
           <div className="hidden shrink-0 items-center gap-2 overflow-x-auto border-b border-border px-8 py-2.5 md:flex">
             {tabButton("notes", t("ws.tabNotes"), notes.data?.length ?? 0)}
-            {tabButton("goals", t("ws.tabGoals"), goals.data?.length ?? 0)}
+            
             {tabButton("okr", t("ws.tabOkr"), objectives.data?.length ?? 0)}
             {tabButton("plan", t("ws.tabPlan"), tasks.data?.filter((x) => !x.done).length ?? 0)}
             {tabButton("ideas", t("ws.tabIdeas"))}
@@ -503,7 +472,6 @@ function Workspace() {
               {(
                 [
                   ["notes", "ws.tabNotes"],
-                  ["goals", "ws.tabGoals"],
                   ["okr", "ws.tabOkr"],
                   ["plan", "ws.tabPlan"],
                   ["ideas", "ws.tabIdeas"],
@@ -609,130 +577,6 @@ function Workspace() {
           </div>
         )}
 
-        {/* GOALS */}
-        {tab === "goals" && (
-          <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-8 md:pb-10">
-            <div className="mx-auto max-w-6xl">
-              <StatusTabs value={goalFilter} onChange={setGoalFilter} />
-              {goalOpen && canEdit && (
-                <form
-                  onSubmit={submitGoal}
-                  className="animate-entry mb-8 grid gap-3 rounded-2xl border border-border bg-card p-4 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end"
-                >
-                  <div className="min-w-0 space-y-1">
-                    <label className="label-mono block" htmlFor="goal-title">
-                      {t("ws.goal")}
-                    </label>
-                    <input
-                      id="goal-title"
-                      value={goalTitle}
-                      onChange={(e) => setGoalTitle(e.target.value)}
-                      maxLength={160}
-                      className={`${field} w-full bg-background`}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="label-mono block" htmlFor="goal-date">
-                      {t("ws.target")}
-                    </label>
-                    <input
-                      id="goal-date"
-                      type="date"
-                      value={goalDate}
-                      onChange={(e) => setGoalDate(e.target.value)}
-                      className={`${field} w-full bg-background`}
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="rounded-full bg-accent px-5 py-2.5 text-xs font-bold text-accent-foreground"
-                  >
-                    {t("ws.add")}
-                  </button>
-                </form>
-              )}
-
-              {goals.data?.length === 0 && (
-                <p className="text-xs text-muted-foreground">{t("ws.emptyGoals")}</p>
-              )}
-              <div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
-                {goals.data?.map((goal) => (
-                  <div
-                    key={goal.id}
-                    className="animate-entry rounded-2xl border border-border bg-card p-5"
-                  >
-                    <div className="mb-3 grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h4 className="min-w-0 break-words text-sm font-bold">{goal.title}</h4>
-                          {goal.status === "completed" && (
-                            <span className="shrink-0 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                              {t("status.badge")}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-muted-foreground">
-                          {goal.target_date
-                            ? `${t("ws.target")}: ${goal.target_date}`
-                            : t("ws.ongoing")}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-                        {canEdit && (
-                          <button
-                            onClick={() =>
-                              updateGoal.mutate({
-                                id: goal.id,
-                                progress: Math.max(0, goal.progress - 10),
-                              })
-                            }
-                            className="size-8 rounded-full border border-border text-xs hover:border-accent hover:text-accent"
-                            aria-label={`− ${goal.title}`}
-                          >
-                            −
-                          </button>
-                        )}
-                        <span className="w-10 text-right text-xs">{goal.progress}%</span>
-                        {canEdit && (
-                          <>
-                            <button
-                              onClick={() =>
-                                updateGoal.mutate({
-                                  id: goal.id,
-                                  progress: Math.min(100, goal.progress + 10),
-                                })
-                              }
-                              className="size-8 rounded-full border border-border text-xs hover:border-accent hover:text-accent"
-                              aria-label={`+ ${goal.title}`}
-                            >
-                              +
-                            </button>
-                            <button
-                              onClick={() =>
-                                goal.status === "completed"
-                                  ? updateGoal.mutate({
-                                      id: goal.id,
-                                      status: "active",
-                                      completed_at: null,
-                                    })
-                                  : setPendingGoal({ id: goal.id, title: goal.title })
-                              }
-                              className="text-[11px] font-semibold text-muted-foreground hover:text-accent"
-                            >
-                              {t(goal.status === "completed" ? "status.reopen" : "status.markDone")}
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <RulerProgress value={goal.progress} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* OKR */}
         {tab === "okr" && (
           <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-8 md:pb-10">
@@ -793,7 +637,7 @@ function Workspace() {
             <div className="mx-auto max-w-6xl">
               <ContentCalendar
                 ownerId={scope}
-                onOpenMilestone={(m) => setTab(m.kind === "goal" ? "goals" : "okr")}
+                onOpenMilestone={() => setTab("okr")}
               />
             </div>
           </div>
@@ -1114,11 +958,10 @@ function Workspace() {
       </div>
 
       {/* Mobile tab bar */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 border-t border-border bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
         {(
           [
             ["notes", "ws.tabNotes"],
-            ["goals", "ws.tabGoals"],
             ["okr", "ws.tabOkr"],
             ["plan", "ws.tabPlan"],
           ] as const
@@ -1206,21 +1049,6 @@ function Workspace() {
         detail={pendingTask?.title}
         onCancel={() => setPendingTask(null)}
         onConfirm={() => pendingTask && deleteTask.mutate(pendingTask.id)}
-      />
-      <ConfirmDialog
-        open={!!pendingGoal}
-        messageKey="confirm.completeGoal"
-        detail={pendingGoal?.title}
-        onCancel={() => setPendingGoal(null)}
-        onConfirm={() =>
-          pendingGoal &&
-          updateGoal.mutate({
-            id: pendingGoal.id,
-            status: "completed",
-            completed_at: new Date().toISOString(),
-            progress: 100,
-          })
-        }
       />
       <datalist id={ROLE_LIST_ID}>
         {[...ROLES.map((r) => t(roleLabel[r])), ...customRoles].map((r) => (
