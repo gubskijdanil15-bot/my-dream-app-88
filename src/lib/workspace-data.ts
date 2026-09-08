@@ -453,6 +453,10 @@ export function useUpdateObjective() {
       status?: LifecycleStatus;
       completed_at?: string | null;
       target_date?: string | null;
+      title?: string;
+      description?: string | null;
+      timeframe?: string | null;
+      category?: string | null;
     }) => {
       const { id, ...patch } = input;
       const { error } = await supabase.from("objectives").update(patch).eq("id", id);
@@ -494,7 +498,13 @@ export function useCreateKeyResult(ownerId?: string) {
 export function useUpdateKeyResult() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { id: string; current_value?: number; target_value?: number }) => {
+    mutationFn: async (input: {
+      id: string;
+      current_value?: number;
+      target_value?: number;
+      title?: string;
+      unit?: string;
+    }) => {
       const { id, ...patch } = input;
       const { error } = await supabase.from("key_results").update(patch).eq("id", id);
       if (error) throw error;
