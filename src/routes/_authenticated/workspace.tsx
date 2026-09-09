@@ -13,7 +13,7 @@ import { ContentCalendar } from "@/components/content-calendar";
 import { OkrBoard } from "@/components/okr-board";
 import { OnboardingGuide } from "@/components/onboarding-guide";
 import { IdeaHub } from "@/components/idea-hub";
-import { AssetsBoard } from "@/components/assets-board";
+
 import { ReleaseRadar } from "@/components/release-radar";
 
 import { NotificationBanner } from "@/components/notification-settings";
@@ -60,7 +60,7 @@ export const Route = createFileRoute("/_authenticated/workspace")({
   component: Workspace,
 });
 
-type Tab = "notes" | "note" | "okr" | "plan" | "calendar" | "ideas" | "assets" | "guide";
+type Tab = "notes" | "note" | "okr" | "plan" | "calendar" | "ideas" | "guide";
 
 const ROLE_KEY = "paperweight-role";
 
@@ -144,7 +144,7 @@ function Workspace() {
 
   const [okrFormOpen, setOkrFormOpen] = useState(false);
   const [ideaFormOpen, setIdeaFormOpen] = useState(false);
-  const [assetFormOpen, setAssetFormOpen] = useState(false);
+  
   const [moreOpen, setMoreOpen] = useState(false);
   const [onlyMine, setOnlyMine] = useState(false);
   const [myRole, setMyRole] = useState<Role | "">("");
