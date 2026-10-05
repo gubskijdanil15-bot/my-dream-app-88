@@ -599,20 +599,6 @@ function Workspace() {
           </div>
         )}
 
-        {/* ASSETS */}
-        {tab === "assets" && (
-          <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-8 md:pb-10">
-            <div className="mx-auto max-w-7xl">
-              <AssetsBoard
-                ownerId={scope}
-                canEdit={canEdit}
-                formOpen={assetFormOpen}
-                onCloseForm={() => setAssetFormOpen(false)}
-              />
-            </div>
-          </div>
-        )}
-
         {/* GUIDE / ONBOARDING */}
         {tab === "guide" && (
           <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-8 md:pb-10">
@@ -973,7 +959,7 @@ function Workspace() {
         <button
           onClick={() => setMoreOpen(true)}
           className={`py-3.5 text-[11px] font-semibold transition-colors ${
-            tab === "ideas" || tab === "assets" || tab === "calendar" || tab === "guide"
+            tab === "ideas" || tab === "calendar" || tab === "guide"
               ? "text-accent"
               : "text-muted-foreground"
           }`}
@@ -994,7 +980,6 @@ function Workspace() {
             {(
               [
                 ["ideas", "ws.tabIdeas"],
-                ["assets", "ws.tabAssets"],
                 ["calendar", "ws.tabCalendar"],
                 ["guide", "ws.tabGuide"],
               ] as const
