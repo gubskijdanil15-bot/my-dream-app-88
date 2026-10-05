@@ -296,9 +296,7 @@ function Workspace() {
             ? "cal.title"
             : tab === "ideas"
               ? "idea.title"
-              : tab === "assets"
-                ? "assets.title"
-                : tab === "guide"
+              : tab === "guide"
                   ? "guide.title"
                   : "ws.notes";
 
@@ -342,9 +340,7 @@ function Workspace() {
         ? { label: "okr.new", open: okrFormOpen, onClick: () => setOkrFormOpen((v) => !v) }
         : tab === "ideas"
           ? { label: "idea.new", open: ideaFormOpen, onClick: () => setIdeaFormOpen((v) => !v) }
-          : tab === "assets"
-            ? { label: "ws.add", open: assetFormOpen, onClick: () => setAssetFormOpen((v) => !v) }
-            : null;
+          : null;
 
   const field =
     "min-w-0 rounded-xl border border-border bg-card px-3 py-2.5 text-base focus:outline-none focus:ring-1 focus:ring-ring sm:text-sm";
@@ -456,7 +452,6 @@ function Workspace() {
             {tabButton("okr", t("ws.tabOkr"), objectives.data?.length ?? 0)}
             {tabButton("plan", t("ws.tabPlan"), tasks.data?.filter((x) => !x.done).length ?? 0)}
             {tabButton("ideas", t("ws.tabIdeas"))}
-            {tabButton("assets", t("ws.tabAssets"))}
             {tabButton("calendar", t("ws.tabCalendar"))}
             {tabButton("guide", t("ws.tabGuide"))}
           </div>
@@ -475,7 +470,6 @@ function Workspace() {
                   ["okr", "ws.tabOkr"],
                   ["plan", "ws.tabPlan"],
                   ["ideas", "ws.tabIdeas"],
-                  ["assets", "ws.tabAssets"],
                   ["calendar", "ws.tabCalendar"],
                   ["guide", "ws.tabGuide"],
                 ] as const
@@ -600,20 +594,6 @@ function Workspace() {
                 canEdit={canEdit}
                 formOpen={ideaFormOpen}
                 onCloseForm={() => setIdeaFormOpen(false)}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* ASSETS */}
-        {tab === "assets" && (
-          <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-8 md:pb-10">
-            <div className="mx-auto max-w-7xl">
-              <AssetsBoard
-                ownerId={scope}
-                canEdit={canEdit}
-                formOpen={assetFormOpen}
-                onCloseForm={() => setAssetFormOpen(false)}
               />
             </div>
           </div>
@@ -979,7 +959,7 @@ function Workspace() {
         <button
           onClick={() => setMoreOpen(true)}
           className={`py-3.5 text-[11px] font-semibold transition-colors ${
-            tab === "ideas" || tab === "assets" || tab === "calendar" || tab === "guide"
+            tab === "ideas" || tab === "calendar" || tab === "guide"
               ? "text-accent"
               : "text-muted-foreground"
           }`}
@@ -1000,7 +980,6 @@ function Workspace() {
             {(
               [
                 ["ideas", "ws.tabIdeas"],
-                ["assets", "ws.tabAssets"],
                 ["calendar", "ws.tabCalendar"],
                 ["guide", "ws.tabGuide"],
               ] as const
