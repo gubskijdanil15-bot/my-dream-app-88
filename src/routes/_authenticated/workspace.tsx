@@ -9,6 +9,7 @@ import { NoteEditor } from "@/components/note-editor";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { KanbanBoard } from "@/components/kanban-board";
+import { CustomBoards } from "@/components/custom-boards";
 import { ContentCalendar } from "@/components/content-calendar";
 import { OkrBoard } from "@/components/okr-board";
 import { OnboardingGuide } from "@/components/onboarding-guide";
@@ -60,7 +61,7 @@ export const Route = createFileRoute("/_authenticated/workspace")({
   component: Workspace,
 });
 
-type Tab = "notes" | "note" | "okr" | "plan" | "calendar" | "ideas" | "guide";
+type Tab = "notes" | "note" | "okr" | "plan" | "boards" | "calendar" | "ideas" | "guide";
 
 const ROLE_KEY = "paperweight-role";
 
@@ -137,7 +138,8 @@ function Workspace() {
   const [capture, setCapture] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("notes");
-  const [planView, setPlanView] = useState<PlanView>("list");
+  const planView = "list" as PlanView;
+  const [boardFormOpen, setBoardFormOpen] = useState(false);
   const [planScope, setPlanScope] = useState<PlanScope>("day");
   const [planSort, setPlanSort] = useState<PlanSort>("date");
   const [collapsed, setCollapsed] = useState(false);
@@ -296,6 +298,8 @@ function Workspace() {
             ? "cal.title"
             : tab === "ideas"
               ? "idea.title"
+              : tab === "boards"
+                ? "boards.title"
               : tab === "guide"
                   ? "guide.title"
                   : "ws.notes";
@@ -340,7 +344,9 @@ function Workspace() {
         ? { label: "okr.new", open: okrFormOpen, onClick: () => setOkrFormOpen((v) => !v) }
         : tab === "ideas"
           ? { label: "idea.new", open: ideaFormOpen, onClick: () => setIdeaFormOpen((v) => !v) }
-          : null;
+          : tab === "boards" && canEdit
+            ? { label: "boards.new", open: boardFormOpen, onClick: () => setBoardFormOpen((v) => !v) }
+            : null;
 
   const field =
     "min-w-0 rounded-xl border border-border bg-card px-3 py-2.5 text-base focus:outline-none focus:ring-1 focus:ring-ring sm:text-sm";
@@ -451,6 +457,7 @@ function Workspace() {
             
             {tabButton("okr", t("ws.tabOkr"), objectives.data?.length ?? 0)}
             {tabButton("plan", t("ws.tabPlan"), tasks.data?.filter((x) => !x.done).length ?? 0)}
+            {tabButton("boards", t("ws.tabBoards"))}
             {tabButton("ideas", t("ws.tabIdeas"))}
             {tabButton("calendar", t("ws.tabCalendar"))}
             {tabButton("guide", t("ws.tabGuide"))}
@@ -469,6 +476,7 @@ function Workspace() {
                   ["notes", "ws.tabNotes"],
                   ["okr", "ws.tabOkr"],
                   ["plan", "ws.tabPlan"],
+                  ["boards", "ws.tabBoards"],
                   ["ideas", "ws.tabIdeas"],
                   ["calendar", "ws.tabCalendar"],
                   ["guide", "ws.tabGuide"],
@@ -699,27 +707,6 @@ function Workspace() {
               </div>
 
               <div className="mb-5 flex flex-wrap items-center gap-2">
-                <div className="inline-flex rounded-full border border-border p-1">
-                  {(
-                    [
-                      ["list", "view.list"],
-                      ["board", "view.board"],
-                    ] as const
-                  ).map(([value, label]) => (
-                    <button
-                      key={value}
-                      onClick={() => setPlanView(value)}
-                      aria-pressed={planView === value}
-                      className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-colors ${
-                        planView === value
-                          ? "bg-foreground text-background"
-                          : "text-muted-foreground hover:text-accent"
-                      }`}
-                    >
-                      {t(label)}
-                    </button>
-                  ))}
-                </div>
                 {planView === "list" && (
                   <div className="inline-flex rounded-full border border-border p-1">
                     {(
@@ -935,6 +922,20 @@ function Workspace() {
             </div>
           </div>
         )}
+
+        {/* BOARDS */}
+        {tab === "boards" && (
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 pb-28 sm:p-8 md:pb-10">
+            <div className="mx-auto max-w-6xl">
+              <CustomBoards
+                ownerId={scope}
+                canEdit={canEdit}
+                formOpen={boardFormOpen}
+                onCloseForm={() => setBoardFormOpen(false)}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Mobile tab bar */}
@@ -959,7 +960,7 @@ function Workspace() {
         <button
           onClick={() => setMoreOpen(true)}
           className={`py-3.5 text-[11px] font-semibold transition-colors ${
-            tab === "ideas" || tab === "calendar" || tab === "guide"
+            tab === "ideas" || tab === "calendar" || tab === "guide" || tab === "boards"
               ? "text-accent"
               : "text-muted-foreground"
           }`}
@@ -979,6 +980,7 @@ function Workspace() {
           >
             {(
               [
+                ["boards", "ws.tabBoards"],
                 ["ideas", "ws.tabIdeas"],
                 ["calendar", "ws.tabCalendar"],
                 ["guide", "ws.tabGuide"],
