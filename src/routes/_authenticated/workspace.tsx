@@ -296,9 +296,7 @@ function Workspace() {
             ? "cal.title"
             : tab === "ideas"
               ? "idea.title"
-              : tab === "assets"
-                ? "assets.title"
-                : tab === "guide"
+              : tab === "guide"
                   ? "guide.title"
                   : "ws.notes";
 
@@ -342,9 +340,7 @@ function Workspace() {
         ? { label: "okr.new", open: okrFormOpen, onClick: () => setOkrFormOpen((v) => !v) }
         : tab === "ideas"
           ? { label: "idea.new", open: ideaFormOpen, onClick: () => setIdeaFormOpen((v) => !v) }
-          : tab === "assets"
-            ? { label: "ws.add", open: assetFormOpen, onClick: () => setAssetFormOpen((v) => !v) }
-            : null;
+          : null;
 
   const field =
     "min-w-0 rounded-xl border border-border bg-card px-3 py-2.5 text-base focus:outline-none focus:ring-1 focus:ring-ring sm:text-sm";
@@ -456,7 +452,6 @@ function Workspace() {
             {tabButton("okr", t("ws.tabOkr"), objectives.data?.length ?? 0)}
             {tabButton("plan", t("ws.tabPlan"), tasks.data?.filter((x) => !x.done).length ?? 0)}
             {tabButton("ideas", t("ws.tabIdeas"))}
-            {tabButton("assets", t("ws.tabAssets"))}
             {tabButton("calendar", t("ws.tabCalendar"))}
             {tabButton("guide", t("ws.tabGuide"))}
           </div>
@@ -475,7 +470,6 @@ function Workspace() {
                   ["okr", "ws.tabOkr"],
                   ["plan", "ws.tabPlan"],
                   ["ideas", "ws.tabIdeas"],
-                  ["assets", "ws.tabAssets"],
                   ["calendar", "ws.tabCalendar"],
                   ["guide", "ws.tabGuide"],
                 ] as const
