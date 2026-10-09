@@ -60,6 +60,40 @@ export function ContentCalendar({ ownerId, onOpenMilestone }: Props) {
   ];
   const todayIso = iso(new Date());
 
+  type Mode = "single" | "multi" | "range";
+  const [mode, setMode] = useState<Mode>("single");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [anchor, setAnchor] = useState<string | null>(null);
+
+  const pick = (key: string) => {
+    if (mode === "single") {
+      setSelected((s) => (s.length === 1 && s[0] === key ? [] : [key]));
+    } else if (mode === "multi") {
+      setSelected((s) => (s.includes(key) ? s.filter((k) => k !== key) : [...s, key].sort()));
+    } else if (!anchor) {
+      setAnchor(key);
+      setSelected([key]);
+    } else {
+      const [a, b] = [anchor, key].sort();
+      const out: string[] = [];
+      const d = new Date(a + "T00:00:00");
+      while (iso(d) <= b) {
+        out.push(iso(d));
+        d.setDate(d.getDate() + 1);
+      }
+      setSelected(out);
+      setAnchor(null);
+    }
+  };
+  const changeMode = (m: Mode) => {
+    setMode(m);
+    setSelected([]);
+    setAnchor(null);
+  };
+  const selectedSet = new Set(selected);
+  const fmtDay = (k: string) =>
+    new Date(k + "T00:00:00").toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
+
   const shift = (delta: number) =>
     setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + delta, 1));
 
@@ -101,6 +135,28 @@ export function ContentCalendar({ ownerId, onOpenMilestone }: Props) {
         </span>
       </div>
 
+      <div className="mb-4 flex flex-wrap gap-2">
+        {(["single", "multi", "range"] as Mode[]).map((m) => (
+          <button
+            key={m}
+            onClick={() => changeMode(m)}
+            className={`min-h-9 rounded-full border px-3 text-xs font-bold ${
+              mode === m ? "border-accent bg-accent text-accent-foreground" : "border-border hover:border-accent"
+            }`}
+          >
+            {t(m === "single" ? "cal.modeSingle" : m === "multi" ? "cal.modeMulti" : "cal.modeRange")}
+          </button>
+        ))}
+        {selected.length > 0 && (
+          <button
+            onClick={() => changeMode(mode)}
+            className="min-h-9 rounded-full px-3 text-xs font-bold text-muted-foreground hover:text-accent"
+          >
+            {t("cal.clearSel")}
+          </button>
+        )}
+      </div>
+
       {(tasks.data?.length ?? 0) === 0 && monthMilestones === 0 && (
         <p className="mb-4 text-xs text-muted-foreground">{t("cal.none")}</p>
       )}
@@ -114,8 +170,17 @@ export function ContentCalendar({ ownerId, onOpenMilestone }: Props) {
           return (
             <div
               key={key}
-              className={`min-h-16 min-w-0 rounded-xl border p-1.5 sm:min-h-24 sm:p-2 ${
-                key === todayIso ? "border-accent" : "border-border"
+              role="button"
+              tabIndex={0}
+              aria-pressed={selectedSet.has(key)}
+              onClick={() => pick(key)}
+              onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && pick(key)}
+              className={`min-h-16 min-w-0 cursor-pointer rounded-xl border p-1.5 transition-colors sm:min-h-24 sm:p-2 ${
+                selectedSet.has(key)
+                  ? "border-accent bg-accent/10"
+                  : key === todayIso
+                    ? "border-accent"
+                    : "border-border hover:bg-muted/50"
               }`}
             >
               <div className="text-[10px] font-bold text-muted-foreground sm:text-[11px]">{day}</div>
@@ -123,7 +188,10 @@ export function ContentCalendar({ ownerId, onOpenMilestone }: Props) {
                 {marks.map((m) => (
                   <li key={`${m.kind}-${m.id}`}>
                     <button
-                      onClick={() => onOpenMilestone?.(m)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenMilestone?.(m);
+                      }}
                       title={`${t("cal.milestone")}: ${m.title}`}
                       className={`w-full truncate rounded px-1 py-0.5 text-left text-[9px] font-semibold transition-opacity hover:opacity-80 sm:text-[10px] ${
                         m.kind === "goal"
@@ -157,6 +225,42 @@ export function ContentCalendar({ ownerId, onOpenMilestone }: Props) {
           );
         })}
       </div>
+
+      <section className="mt-6 rounded-2xl border border-border p-4">
+        <h3 className="mb-3 text-sm font-bold">
+          {t("cal.selected")} {selected.length > 0 && `(${selected.length})`}
+        </h3>
+        {selected.length === 0 ? (
+          <p className="text-xs text-muted-foreground">{t("cal.pickHint")}</p>
+        ) : selected.every((k) => !(byDay.get(k)?.length || milestonesByDay.get(k)?.length)) ? (
+          <p className="text-xs text-muted-foreground">{t("cal.emptySel")}</p>
+        ) : (
+          <ul className="space-y-3">
+            {selected
+              .filter((k) => byDay.get(k)?.length || milestonesByDay.get(k)?.length)
+              .map((k) => (
+                <li key={k}>
+                  <div className="mb-1 text-xs font-bold text-muted-foreground">{fmtDay(k)}</div>
+                  <ul className="space-y-1">
+                    {(milestonesByDay.get(k) ?? []).map((m) => (
+                      <li key={m.id}>
+                        <button onClick={() => onOpenMilestone?.(m)} className="text-left text-sm font-semibold hover:text-accent">
+                          ◆ {m.title}
+                        </button>
+                      </li>
+                    ))}
+                    {(byDay.get(k) ?? []).map((task) => (
+                      <li key={task.id} className={`text-sm ${task.done ? "text-muted-foreground line-through" : ""}`}>
+                        {task.due_time ? `${task.due_time.slice(0, 5)} · ` : "• "}
+                        {task.title}
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }
