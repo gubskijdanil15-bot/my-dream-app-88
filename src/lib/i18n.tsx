@@ -330,6 +330,7 @@ const en = {
     "cal.goal": "Goal",
     "cal.okr": "OKR",
     "cal.milestone": "Milestone",
+    "cal.modeSingle": "One day", "cal.modeMulti": "Several days", "cal.modeRange": "Range", "cal.selected": "Selected days", "cal.clearSel": "Clear selection", "cal.pickHint": "Tap days in the calendar to see what is planned.", "cal.emptySel": "Nothing planned on the selected days.",
     "okr.targetDate": "Target date",
     "idea.delete": "Delete idea",
 
@@ -737,6 +738,7 @@ const uk: Dict = {
     "cal.goal": "Ціль",
     "cal.okr": "OKR",
     "cal.milestone": "Віха",
+    "cal.modeSingle": "Один день", "cal.modeMulti": "Кілька днів", "cal.modeRange": "Діапазон", "cal.selected": "Вибрані дні", "cal.clearSel": "Скинути вибір", "cal.pickHint": "Торкніться днів у календарі, щоб побачити заплановане.", "cal.emptySel": "На вибрані дні нічого не заплановано.",
     "okr.targetDate": "Цільова дата",
     "idea.delete": "Видалити ідею",
 
@@ -1146,6 +1148,7 @@ const ru: Dict = {
   "cal.goal": "Цель",
   "cal.okr": "OKR",
   "cal.milestone": "Веха",
+    "cal.modeSingle": "Один день", "cal.modeMulti": "Несколько дней", "cal.modeRange": "Диапазон", "cal.selected": "Выбранные дни", "cal.clearSel": "Сбросить выбор", "cal.pickHint": "Нажмите на дни в календаре, чтобы увидеть запланированное.", "cal.emptySel": "На выбранные дни ничего не запланировано.",
   "okr.targetDate": "Целевая дата",
   "idea.delete": "Удалить идею",
 
