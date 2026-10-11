@@ -395,7 +395,7 @@ const en = {
       "Pick any date to plan for, or switch to All tasks to see everything you've scheduled with its date, priority and status. Sort by date or priority to decide what's next.",
     "guide.boards.t": "Projects",
     "guide.boards.b":
-      "Build your own Kanban board with the columns you want — a shoot, an editing pipeline, a campaign. Add cards, move them between columns and delete them when they're done.",
+      "Create projects with custom workflow columns and cards. Open a project to edit its script, DISPO, locations and production notes. Complete it to move it to the completed projects list, or reopen it later.",
     "guide.cal.t": "Calendar",
     "guide.cal.b":
       "Scheduled tasks appear on the month view together with goal and OKR target dates. Tap a milestone to jump straight to it.",
@@ -823,7 +823,7 @@ const uk: Dict = {
       "Оберіть будь-яку дату або перемкніться на «Усі задачі», щоб побачити все заплановане з датою, пріоритетом і статусом. Сортуйте за датою чи пріоритетом.",
     "guide.boards.t": "Проєкти",
     "guide.boards.b":
-      "Створіть власну канбан-дошку з потрібними колонками — зйомка, монтаж, кампанія. Додавайте картки, переміщуйте їх і видаляйте, коли готово.",
+      "Створюйте проєкти з власними колонками й картками. Відкрийте проєкт, щоб редагувати сценарій, DISPO, локації та виробничі нотатки. Завершіть його, щоб перенести до списку завершених, або відновіть пізніше.",
     "guide.cal.t": "Календар",
     "guide.cal.b":
       "Заплановані задачі з'являються в місячному вигляді разом із датами цілей та OKR. Торкніться віхи, щоб перейти до неї.",
@@ -1245,7 +1245,7 @@ const ru: Dict = {
     "Выберите любую дату или переключитесь на «Все задачи», чтобы увидеть всё запланированное с датой, приоритетом и статусом. Сортируйте по дате или приоритету.",
   "guide.boards.t": "Проекты",
   "guide.boards.b":
-    "Соберите свою канбан-доску с нужными колонками — съёмка, монтаж, кампания. Добавляйте карточки, перемещайте их и удаляйте, когда готово.",
+    "Создавайте проекты со своими колонками и карточками. Откройте проект, чтобы редактировать сценарий, DISPO, локации и производственные заметки. Завершите его, чтобы перенести в список завершённых, или возобновите позже.",
   "guide.cal.t": "Календарь",
   "guide.cal.b":
     "Запланированные задачи появляются в месяце вместе с датами целей и OKR. Нажмите на веху, чтобы перейти к ней.",
