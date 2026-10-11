@@ -1,5 +1,10 @@
 # Paperweight roadmap
 
+## Projects update
+- [ ] Replace Boards labels with Projects; preserve existing content
+- [ ] Completed projects list and editable script, DISPO, locations and production notes
+- [ ] Verify project save, completion and reopening
+
 ## In progress — major system update
 - [x] DB: custom boards (boards, board_columns, board_cards) with sharing-aware RLS
 - [x] i18n: add Russian, restructure dict (en base + partial uk/ru), new keys

@@ -7,6 +7,12 @@ export type Board = {
   name: string;
   description: string | null;
   position: number;
+  status: "active" | "completed";
+  script: string | null;
+  dispo: string | null;
+  locations: string | null;
+  production_notes: string | null;
+  completed_at: string | null;
 };
 
 export type BoardColumn = {
@@ -38,12 +44,12 @@ export function useBoards(ownerId?: string) {
       const owner = await ownerOrSelf(ownerId);
       const { data, error } = await supabase
         .from("boards")
-        .select("id, name, description, position")
+        .select("id, name, description, position, status, script, dispo, locations, production_notes, completed_at")
         .eq("user_id", owner)
         .order("position", { ascending: true })
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []).map((row) => ({ ...row, status: row.status === "completed" ? "completed" : "active" }));
     },
   });
 }
@@ -51,15 +57,16 @@ export function useBoards(ownerId?: string) {
 export function useCreateBoard(ownerId?: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { name: string; description: string | null }) => {
+    mutationFn: async (input: { name: string; description: string | null; columnNames: string[] }) => {
+      const { columnNames, ...project } = input;
       const user_id = await ownerOrSelf(ownerId);
       const { data, error } = await supabase
         .from("boards")
-        .insert({ ...input, user_id })
+        .insert({ ...project, user_id })
         .select("id")
         .single();
       if (error) throw error;
-      const columns = ["To do", "Doing", "Done"].map((name, position) => ({
+      const columns = columnNames.map((name, position) => ({
         board_id: data.id,
         user_id,
         name,
@@ -79,7 +86,7 @@ export function useCreateBoard(ownerId?: string) {
 export function useUpdateBoard() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { id: string; name?: string; description?: string | null }) => {
+    mutationFn: async (input: { id: string } & Partial<Omit<Board, "id" | "position">>) => {
       const { id, ...patch } = input;
       const { error } = await supabase.from("boards").update(patch).eq("id", id);
       if (error) throw error;
@@ -110,10 +117,11 @@ export function useBoardColumns(boardId?: string) {
     enabled: !!boardId,
     queryKey: ["board-columns", boardId],
     queryFn: async (): Promise<BoardColumn[]> => {
+      if (!boardId) return [];
       const { data, error } = await supabase
         .from("board_columns")
         .select("id, board_id, name, position")
-        .eq("board_id", boardId!)
+        .eq("board_id", boardId)
         .order("position", { ascending: true })
         .order("created_at", { ascending: true });
       if (error) throw error;
@@ -167,10 +175,11 @@ export function useBoardCards(boardId?: string) {
     enabled: !!boardId,
     queryKey: ["board-cards", boardId],
     queryFn: async (): Promise<BoardCard[]> => {
+      if (!boardId) return [];
       const { data, error } = await supabase
         .from("board_cards")
         .select("id, board_id, column_id, title, detail, position")
-        .eq("board_id", boardId!)
+        .eq("board_id", boardId)
         .order("position", { ascending: true })
         .order("created_at", { ascending: true });
       if (error) throw error;

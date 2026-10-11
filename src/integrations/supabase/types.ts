@@ -135,29 +135,47 @@ export type Database = {
       }
       boards: {
         Row: {
+          completed_at: string | null
           created_at: string
           description: string | null
+          dispo: string | null
           id: string
+          locations: string | null
           name: string
           position: number
+          production_notes: string | null
+          script: string | null
+          status: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          completed_at?: string | null
           created_at?: string
           description?: string | null
+          dispo?: string | null
           id?: string
+          locations?: string | null
           name: string
           position?: number
+          production_notes?: string | null
+          script?: string | null
+          status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          completed_at?: string | null
           created_at?: string
           description?: string | null
+          dispo?: string | null
           id?: string
+          locations?: string | null
           name?: string
           position?: number
+          production_notes?: string | null
+          script?: string | null
+          status?: string
           updated_at?: string
           user_id?: string
         }

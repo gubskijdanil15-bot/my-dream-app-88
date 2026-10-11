@@ -2,6 +2,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useLang } from "@/lib/i18n";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { Button } from "@/components/ui/button";
+import { ProjectInfo } from "@/components/project-info";
+import { filterProjects } from "@/lib/project-status";
 import {
   useBoardCards,
   useBoardColumns,
@@ -37,6 +40,8 @@ export function CustomBoards({ ownerId, canEdit, formOpen, onCloseForm }: Props)
   const [pending, setPending] = useState<Board | null>(null);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [status, setStatus] = useState<"active" | "completed">("active");
+  const visibleProjects = filterProjects(boards.data ?? [], status);
 
   const open = boards.data?.find((b) => b.id === openId) ?? null;
 
@@ -48,6 +53,7 @@ export function CustomBoards({ ownerId, canEdit, formOpen, onCloseForm }: Props)
       const created = await createBoard.mutateAsync({
         name: value.slice(0, 80),
         description: description.trim() || null,
+        columnNames: [t("projects.todo"), t("projects.doing"), t("ws.done")],
       });
       setName("");
       setDescription("");
@@ -99,15 +105,25 @@ export function CustomBoards({ ownerId, canEdit, formOpen, onCloseForm }: Props)
         </form>
       )}
 
-      {boards.data?.length === 0 && (
-        <p className="text-xs text-muted-foreground">{t("boards.empty")}</p>
+      <div className="mb-5 flex flex-wrap gap-2" role="group" aria-label={t("projects.status")}>
+        {(["active", "completed"] as const).map((value) => (
+          <Button key={value} variant={status === value ? "default" : "outline"} aria-pressed={status === value} onClick={() => setStatus(value)}>
+            {t(value === "active" ? "projects.active" : "projects.completed")}
+            <span>{(boards.data ?? []).filter((p) => p.status === value).length}</span>
+          </Button>
+        ))}
+      </div>
+      {boards.isLoading && <p className="text-sm text-muted-foreground">{t("ws.loading")}</p>}
+      {boards.isError && <p className="text-sm text-destructive">{t("boards.err")}</p>}
+      {!boards.isLoading && !boards.isError && visibleProjects.length === 0 && (
+        <p className="text-sm text-muted-foreground">{t(status === "completed" ? "projects.emptyCompleted" : "boards.empty")}</p>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
-        {boards.data?.map((board) => (
+      <div className={status === "completed" ? "grid gap-3" : "grid gap-4 sm:grid-cols-2 2xl:grid-cols-3"}>
+        {visibleProjects.map((board) => (
           <article
             key={board.id}
-            className="animate-entry rounded-2xl border border-border bg-card p-5"
+            className="animate-entry min-w-0 rounded-lg border border-border bg-card p-5"
           >
             {renaming === board.id ? (
               <form
@@ -227,6 +243,9 @@ function BoardDetail({
           {(cards.data ?? []).length} {t("boards.cards")}
         </span>
       </div>
+
+      <ProjectInfo key={board.id} project={board} canEdit={canEdit} />
+      <h3 className="mb-4 border-t border-border pt-6 text-lg font-bold">{t("projects.workflow")}</h3>
 
       {canEdit && (
         <form
