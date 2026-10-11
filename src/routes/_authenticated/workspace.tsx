@@ -50,10 +50,10 @@ export const Route = createFileRoute("/_authenticated/workspace")({
       {
         name: "description",
         content:
-          "Notes, goals, OKRs, a production board and today's plan in a single quiet workspace.",
+          "Notes, OKRs, production projects with scripts and call sheets, and plans across dates in Paperweight.",
       },
       { property: "og:title", content: "Workspace — Paperweight" },
-      { property: "og:description", content: "Notes, goals, OKRs and today's plan." },
+      { property: "og:description", content: "Notes, OKRs, production projects and plans across dates." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
