@@ -59,6 +59,7 @@ export type Task = {
   priority: "low" | "medium" | "high";
   done: boolean;
   due_date: string;
+  due_end: string | null;
   due_time: string | null;
   remind_at: string | null;
   stage: Stage;
