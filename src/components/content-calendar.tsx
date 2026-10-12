@@ -29,13 +29,20 @@ export function ContentCalendar({ ownerId, onOpenMilestone }: Props) {
 
   const byDay = useMemo(() => {
     const map = new Map<string, Task[]>();
+    const endIso = iso(end);
     for (const task of tasks.data ?? []) {
-      const list = map.get(task.due_date) ?? [];
-      list.push(task);
-      map.set(task.due_date, list);
+      const last = task.due_end && task.due_end > task.due_date ? task.due_end : task.due_date;
+      const d = new Date(`${task.due_date < iso(start) ? iso(start) : task.due_date}T00:00:00`);
+      while (iso(d) <= last && iso(d) <= endIso) {
+        const key = iso(d);
+        const list = map.get(key) ?? [];
+        list.push(task);
+        map.set(key, list);
+        d.setDate(d.getDate() + 1);
+      }
     }
     return map;
-  }, [tasks.data]);
+  }, [tasks.data, start, end]);
 
   const milestonesByDay = useMemo(() => {
     const map = new Map<string, Milestone[]>();
