@@ -1,5 +1,5 @@
-/// <reference types="bun" />
-import { describe, expect, test } from "bun:test";
+import { describe, test } from "node:test";
+import { deepStrictEqual } from "node:assert";
 import { completionPatch, filterProjects } from "./project-status";
 
 describe("project lifecycle", () => {
@@ -9,14 +9,14 @@ describe("project lifecycle", () => {
       { id: "active", status: "active" as const, completed_at: null },
       { id: "newer", status: "completed" as const, completed_at: "2026-10-11T12:00:00.000Z" },
     ];
-    expect(filterProjects(projects, "completed").map((p) => p.id)).toEqual(["newer", "older"]);
+    deepStrictEqual(filterProjects(projects, "completed").map((p) => p.id), ["newer", "older"]);
   });
   test("completion records its date", () => {
-    expect(completionPatch("completed", new Date("2026-10-11T21:13:00Z"))).toEqual({
+    deepStrictEqual(completionPatch("completed", new Date("2026-10-11T21:13:00Z")), {
       status: "completed", completed_at: "2026-10-11T21:13:00.000Z",
     });
   });
   test("reopening clears the completion date", () => {
-    expect(completionPatch("active")).toEqual({ status: "active", completed_at: null });
+    deepStrictEqual(completionPatch("active"), { status: "active", completed_at: null });
   });
 });

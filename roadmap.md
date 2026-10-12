@@ -1,9 +1,9 @@
 # Paperweight roadmap
 
 ## Projects update
-- [ ] Replace Boards labels with Projects; preserve existing content
-- [ ] Completed projects list and editable script, DISPO, locations and production notes
-- [ ] Verify project save, completion and reopening
+- [x] Replace Boards labels with Projects; preserve existing content
+- [x] Completed projects list and editable script, DISPO, locations and production notes
+- [x] Verify project save, completion and reopening
 
 ## In progress — major system update
 - [x] DB: custom boards (boards, board_columns, board_cards) with sharing-aware RLS
