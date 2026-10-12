@@ -8,6 +8,13 @@
       "when": 1791753258287,
       "tag": "0000_project_details_on_boards",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791822197850,
+      "tag": "0001_add_date_ranges",
+      "breakpoints": true
     }
   ]
 }

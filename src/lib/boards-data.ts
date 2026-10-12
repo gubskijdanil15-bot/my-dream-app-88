@@ -13,6 +13,8 @@ export type Board = {
   locations: string | null;
   production_notes: string | null;
   completed_at: string | null;
+  start_date: string | null;
+  end_date: string | null;
 };
 
 export type BoardColumn = {
@@ -44,7 +46,7 @@ export function useBoards(ownerId?: string) {
       const owner = await ownerOrSelf(ownerId);
       const { data, error } = await supabase
         .from("boards")
-        .select("id, name, description, position, status, script, dispo, locations, production_notes, completed_at")
+        .select("id, name, description, position, status, script, dispo, locations, production_notes, completed_at, start_date, end_date")
         .eq("user_id", owner)
         .order("position", { ascending: true })
         .order("created_at", { ascending: true });

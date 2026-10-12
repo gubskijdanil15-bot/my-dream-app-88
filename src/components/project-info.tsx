@@ -28,6 +28,13 @@ export function ProjectInfo({ project, canEdit }: { project: Board; canEdit: boo
           {t(completed ? "projects.completed" : "projects.active")}
           {project.completed_at && ` · ${new Date(project.completed_at).toLocaleDateString(lang)}`}
         </span>
+        {(project.start_date || project.end_date) && (
+          <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
+            {project.start_date ? new Date(`${project.start_date}T00:00:00`).toLocaleDateString(lang) : "…"}
+            {" → "}
+            {project.end_date ? new Date(`${project.end_date}T00:00:00`).toLocaleDateString(lang) : "…"}
+          </span>
+        )}
         {canEdit && <div className="flex flex-wrap gap-2 sm:ml-auto">
           {!editing && <Button variant="outline" onClick={() => { setDraft(project); setEditing(true); }}>
             <Pencil />{t("projects.edit")}
@@ -45,7 +52,8 @@ export function ProjectInfo({ project, canEdit }: { project: Board; canEdit: boo
             await update.mutateAsync({ id: project.id, name: draft.name.trim(),
               description: draft.description?.trim() || null, script: draft.script?.trim() || null,
               dispo: draft.dispo?.trim() || null, locations: draft.locations?.trim() || null,
-              production_notes: draft.production_notes?.trim() || null });
+              production_notes: draft.production_notes?.trim() || null,
+              start_date: draft.start_date || null, end_date: draft.end_date || null });
             setEditing(false);
             toast.success(t("projects.saved"));
           } catch { toast.error(t("boards.err")); }
@@ -54,6 +62,16 @@ export function ProjectInfo({ project, canEdit }: { project: Board; canEdit: boo
             <input required maxLength={80} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })}
               className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-base" />
           </label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="grid gap-2 text-sm font-bold">{t("projects.start")}
+              <input type="date" value={draft.start_date ?? ""} onChange={(e) => setDraft({ ...draft, start_date: e.target.value || null })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-base font-normal" />
+            </label>
+            <label className="grid gap-2 text-sm font-bold">{t("projects.end")}
+              <input type="date" min={draft.start_date ?? undefined} value={draft.end_date ?? ""} onChange={(e) => setDraft({ ...draft, end_date: e.target.value || null })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-base font-normal" />
+            </label>
+          </div>
           {sections.map(([key, label]) => <label key={key} className="grid gap-2 text-sm font-bold">{t(label)}
             <textarea rows={key === "script" || key === "dispo" ? 7 : 3} value={draft[key] ?? ""}
               onChange={(e) => setDraft({ ...draft, [key]: e.target.value })}

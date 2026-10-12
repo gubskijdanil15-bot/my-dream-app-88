@@ -59,6 +59,7 @@ export type Task = {
   priority: "low" | "medium" | "high";
   done: boolean;
   due_date: string;
+  due_end: string | null;
   due_time: string | null;
   remind_at: string | null;
   stage: Stage;
@@ -233,7 +234,7 @@ export function useUpdateGoal() {
 /* ---------------- tasks ---------------- */
 
 const TASK_COLUMNS =
-  "id, title, priority, done, due_date, due_time, remind_at, stage, key_result_id, assigned_role, links";
+  "id, title, priority, done, due_date, due_end, due_time, remind_at, stage, key_result_id, assigned_role, links";
 
 const mapTask = (row: Record<string, unknown>): Task => ({
   id: row['id'] as string,
@@ -241,6 +242,7 @@ const mapTask = (row: Record<string, unknown>): Task => ({
   priority: row['priority'] as Task["priority"],
   done: row['done'] as boolean,
   due_date: row['due_date'] as string,
+  due_end: (row['due_end'] as string | null) ?? null,
   due_time: (row['due_time'] as string | null) ?? null,
   remind_at: (row['remind_at'] as string | null) ?? null,
   stage: ((row['stage'] as Stage) ?? "idea") as Stage,
@@ -258,7 +260,8 @@ export function useTasks(due: string, ownerId?: string) {
         .from("tasks")
         .select(TASK_COLUMNS)
         .eq("user_id", owner)
-        .eq("due_date", due)
+        .lte("due_date", due)
+        .or(`due_end.is.null,due_end.gte.${due}`)
         .order("due_time", { ascending: true, nullsFirst: true })
         .order("created_at", { ascending: true });
       if (error) throw error;
@@ -277,8 +280,8 @@ export function useTasksRange(from: string, to: string, ownerId?: string) {
         .from("tasks")
         .select(TASK_COLUMNS)
         .eq("user_id", owner)
-        .gte("due_date", from)
         .lte("due_date", to)
+        .or(`due_end.is.null,due_end.gte.${from}`)
         .order("due_date", { ascending: true });
       if (error) throw error;
       return (data ?? []).map(mapTask);
@@ -311,6 +314,7 @@ export function useCreateTask(ownerId?: string) {
       title: string;
       priority: Task["priority"];
       due_date: string;
+      due_end?: string | null;
       due_time?: string | null;
       remind_at?: string | null;
       key_result_id?: string | null;
@@ -333,6 +337,7 @@ export function useUpdateTask() {
       title?: string;
       priority?: Task["priority"];
       due_date?: string;
+      due_end?: string | null;
       due_time?: string | null;
       remind_at?: string | null;
       stage?: Stage;

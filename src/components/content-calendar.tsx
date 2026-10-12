@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { useLang } from "@/lib/i18n";
 import { useGoals, useObjectives, useTasksRange, type Task } from "@/lib/workspace-data";
+import { useBoards } from "@/lib/boards-data";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const iso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-export type Milestone = { id: string; title: string; kind: "goal" | "okr"; date: string };
+export type Milestone = { id: string; title: string; kind: "goal" | "okr" | "project"; date: string };
 
 type Props = {
   ownerId?: string;
@@ -26,16 +27,24 @@ export function ContentCalendar({ ownerId, onOpenMilestone }: Props) {
   const tasks = useTasksRange(iso(start), iso(end), ownerId);
   const goals = useGoals(ownerId, "all");
   const objectives = useObjectives(ownerId, "all");
+  const projects = useBoards(ownerId);
 
   const byDay = useMemo(() => {
     const map = new Map<string, Task[]>();
+    const endIso = iso(end);
     for (const task of tasks.data ?? []) {
-      const list = map.get(task.due_date) ?? [];
-      list.push(task);
-      map.set(task.due_date, list);
+      const last = task.due_end && task.due_end > task.due_date ? task.due_end : task.due_date;
+      const d = new Date(`${task.due_date < iso(start) ? iso(start) : task.due_date}T00:00:00`);
+      while (iso(d) <= last && iso(d) <= endIso) {
+        const key = iso(d);
+        const list = map.get(key) ?? [];
+        list.push(task);
+        map.set(key, list);
+        d.setDate(d.getDate() + 1);
+      }
     }
     return map;
-  }, [tasks.data]);
+  }, [tasks.data, start, end]);
 
   const milestonesByDay = useMemo(() => {
     const map = new Map<string, Milestone[]>();
@@ -50,8 +59,12 @@ export function ContentCalendar({ ownerId, onOpenMilestone }: Props) {
     for (const o of objectives.data ?? []) {
       if (o.target_date) push({ id: o.id, title: o.title, kind: "okr", date: o.target_date });
     }
+    for (const p of projects.data ?? []) {
+      if (p.start_date) push({ id: p.id, title: p.name, kind: "project", date: p.start_date });
+      if (p.end_date && p.end_date !== p.start_date) push({ id: p.id, title: p.name, kind: "project", date: p.end_date });
+    }
     return map;
-  }, [goals.data, objectives.data]);
+  }, [goals.data, objectives.data, projects.data]);
 
   const leading = (start.getDay() + 6) % 7; // Monday-first
   const cells = [
@@ -133,6 +146,9 @@ export function ContentCalendar({ ownerId, onOpenMilestone }: Props) {
         <span className="flex items-center gap-1.5">
           <span className="size-2 rounded-full bg-sky-500" /> {t("cal.okr")}
         </span>
+        <span className="flex items-center gap-1.5">
+          <span className="size-2 rounded-full bg-amber-500" /> {t("cal.project")}
+        </span>
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">
@@ -196,7 +212,9 @@ export function ContentCalendar({ ownerId, onOpenMilestone }: Props) {
                       className={`w-full truncate rounded px-1 py-0.5 text-left text-[9px] font-semibold transition-opacity hover:opacity-80 sm:text-[10px] ${
                         m.kind === "goal"
                           ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
-                          : "bg-sky-500/15 text-sky-700 dark:text-sky-400"
+                          : m.kind === "okr"
+                            ? "bg-sky-500/15 text-sky-700 dark:text-sky-400"
+                            : "bg-amber-500/15 text-amber-700 dark:text-amber-400"
                       }`}
                     >
                       ◆ {m.title}

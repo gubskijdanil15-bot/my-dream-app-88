@@ -139,12 +139,14 @@ export type Database = {
           created_at: string
           description: string | null
           dispo: string | null
+          end_date: string | null
           id: string
           locations: string | null
           name: string
           position: number
           production_notes: string | null
           script: string | null
+          start_date: string | null
           status: string
           updated_at: string
           user_id: string
@@ -154,12 +156,14 @@ export type Database = {
           created_at?: string
           description?: string | null
           dispo?: string | null
+          end_date?: string | null
           id?: string
           locations?: string | null
           name: string
           position?: number
           production_notes?: string | null
           script?: string | null
+          start_date?: string | null
           status?: string
           updated_at?: string
           user_id: string
@@ -169,12 +173,14 @@ export type Database = {
           created_at?: string
           description?: string | null
           dispo?: string | null
+          end_date?: string | null
           id?: string
           locations?: string | null
           name?: string
           position?: number
           production_notes?: string | null
           script?: string | null
+          start_date?: string | null
           status?: string
           updated_at?: string
           user_id?: string
@@ -598,6 +604,7 @@ export type Database = {
           created_at: string
           done: boolean
           due_date: string
+          due_end: string | null
           due_time: string | null
           goal_id: string | null
           id: string
@@ -615,6 +622,7 @@ export type Database = {
           created_at?: string
           done?: boolean
           due_date?: string
+          due_end?: string | null
           due_time?: string | null
           goal_id?: string | null
           id?: string
@@ -632,6 +640,7 @@ export type Database = {
           created_at?: string
           done?: boolean
           due_date?: string
+          due_end?: string | null
           due_time?: string | null
           goal_id?: string | null
           id?: string
