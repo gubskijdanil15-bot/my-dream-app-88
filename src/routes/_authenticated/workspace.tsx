@@ -156,6 +156,7 @@ function Workspace() {
   const [taskTitle, setTaskTitle] = useState("");
   const [taskPriority, setTaskPriority] = useState<Task["priority"]>("medium");
   const [taskTime, setTaskTime] = useState("");
+  const [taskEnd, setTaskEnd] = useState("");
   const [taskReminder, setTaskReminder] = useState<Reminder>("none");
   const [taskKr, setTaskKr] = useState("");
 
@@ -196,6 +197,7 @@ function Workspace() {
   function resetTaskForm() {
     setTaskTitle("");
     setTaskTime("");
+    setTaskEnd("");
     setTaskReminder("none");
     setTaskKr("");
     setTaskRole("");
@@ -222,15 +224,18 @@ function Workspace() {
       return a.due_date.localeCompare(b.due_date) || (a.due_time ?? "").localeCompare(b.due_time ?? "");
     });
 
-  const dateTag = (iso: string) => {
+  const dateTag = (iso: string, end?: string | null) => {
     if (!iso) return t("task.noDate");
+    const fmt = (d: string) =>
+      new Date(`${d}T00:00:00`).toLocaleDateString(locale, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    if (end && end > iso) return `${fmt(iso)} → ${fmt(end)}`;
     if (iso === today) return t("plan.today");
     if (iso === addDays(new Date(), 1)) return t("plan.tomorrow");
-    return new Date(`${iso}T00:00:00`).toLocaleDateString(locale, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    return fmt(iso);
   };
 
 
@@ -272,6 +277,7 @@ function Workspace() {
         title: title.slice(0, 200),
         priority: taskPriority,
         due_date: planDate,
+        due_end: taskEnd && taskEnd > planDate ? taskEnd : null,
         due_time: taskTime || null,
         remind_at: reminderAt(),
         key_result_id: taskKr || null,
@@ -279,6 +285,7 @@ function Workspace() {
       });
       setTaskTitle("");
       setTaskTime("");
+      setTaskEnd("");
       setTaskReminder("none");
     } catch {
       toast.error(t("ws.errTask"));
@@ -778,6 +785,15 @@ function Workspace() {
                         aria-label={t("task.time")}
                         className={`${field} w-full`}
                       />
+                      <input
+                        type="date"
+                        value={taskEnd}
+                        min={planDate}
+                        onChange={(e) => setTaskEnd(e.target.value)}
+                        aria-label={t("plan.until")}
+                        title={t("plan.until")}
+                        className={`${field} w-full`}
+                      />
                       <select
                         value={taskPriority}
                         onChange={(e) => setTaskPriority(e.target.value as Task["priority"])}
@@ -882,7 +898,7 @@ function Workspace() {
                           </span>
                           {planScope === "all" && (
                             <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-[11px] text-muted-foreground">
-                              {dateTag(task.due_date)}
+                              {dateTag(task.due_date, task.due_end)}
                             </span>
                           )}
                           {task.due_time && (
