@@ -632,7 +632,7 @@ function Workspace() {
             <div className="mx-auto max-w-6xl">
               <ContentCalendar
                 ownerId={scope}
-                onOpenMilestone={() => setTab("okr")}
+                onOpenMilestone={(m) => setTab(m.kind === "project" ? "boards" : "okr")}
               />
             </div>
           </div>
