@@ -274,12 +274,13 @@ function Workspace() {
     e.preventDefault();
     const title = taskTitle.trim();
     if (!title) return;
+    const start = taskStart || planDate;
     try {
       await createTask.mutateAsync({
         title: title.slice(0, 200),
         priority: taskPriority,
-        due_date: planDate,
-        due_end: taskEnd && taskEnd > planDate ? taskEnd : null,
+        due_date: start,
+        due_end: taskEnd && taskEnd > start ? taskEnd : null,
         due_time: taskTime || null,
         remind_at: reminderAt(),
         key_result_id: taskKr || null,
@@ -287,6 +288,7 @@ function Workspace() {
       });
       setTaskTitle("");
       setTaskTime("");
+      setTaskStart("");
       setTaskEnd("");
       setTaskReminder("none");
     } catch {
