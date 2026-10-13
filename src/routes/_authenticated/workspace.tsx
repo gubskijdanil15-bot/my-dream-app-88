@@ -264,7 +264,7 @@ function Workspace() {
 
   function reminderAt(): string | null {
     if (taskReminder === "none") return null;
-    const base = new Date(`${planDate}T${taskTime || "09:00"}:00`);
+    const base = new Date(`${taskStart || planDate}T${taskTime || "09:00"}:00`);
     if (taskReminder === "1h") base.setHours(base.getHours() - 1);
     if (taskReminder === "1d") base.setDate(base.getDate() - 1);
     return base.toISOString();
