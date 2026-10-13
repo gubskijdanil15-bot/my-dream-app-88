@@ -156,6 +156,7 @@ function Workspace() {
   const [taskTitle, setTaskTitle] = useState("");
   const [taskPriority, setTaskPriority] = useState<Task["priority"]>("medium");
   const [taskTime, setTaskTime] = useState("");
+  const [taskStart, setTaskStart] = useState("");
   const [taskEnd, setTaskEnd] = useState("");
   const [taskReminder, setTaskReminder] = useState<Reminder>("none");
   const [taskKr, setTaskKr] = useState("");
@@ -197,6 +198,7 @@ function Workspace() {
   function resetTaskForm() {
     setTaskTitle("");
     setTaskTime("");
+    setTaskStart("");
     setTaskEnd("");
     setTaskReminder("none");
     setTaskKr("");
@@ -262,7 +264,7 @@ function Workspace() {
 
   function reminderAt(): string | null {
     if (taskReminder === "none") return null;
-    const base = new Date(`${planDate}T${taskTime || "09:00"}:00`);
+    const base = new Date(`${taskStart || planDate}T${taskTime || "09:00"}:00`);
     if (taskReminder === "1h") base.setHours(base.getHours() - 1);
     if (taskReminder === "1d") base.setDate(base.getDate() - 1);
     return base.toISOString();
@@ -272,12 +274,13 @@ function Workspace() {
     e.preventDefault();
     const title = taskTitle.trim();
     if (!title) return;
+    const start = taskStart || planDate;
     try {
       await createTask.mutateAsync({
         title: title.slice(0, 200),
         priority: taskPriority,
-        due_date: planDate,
-        due_end: taskEnd && taskEnd > planDate ? taskEnd : null,
+        due_date: start,
+        due_end: taskEnd && taskEnd > start ? taskEnd : null,
         due_time: taskTime || null,
         remind_at: reminderAt(),
         key_result_id: taskKr || null,
@@ -285,6 +288,7 @@ function Workspace() {
       });
       setTaskTitle("");
       setTaskTime("");
+      setTaskStart("");
       setTaskEnd("");
       setTaskReminder("none");
     } catch {
@@ -769,7 +773,7 @@ function Workspace() {
                   {canEdit && (
                     <form
                       onSubmit={submitTask}
-                      className="mb-6 grid gap-2 rounded-2xl border border-border bg-card/60 p-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_7rem_minmax(0,8rem)_minmax(0,10rem)_minmax(0,9rem)_auto]"
+                      className="mb-6 grid gap-2 rounded-2xl border border-border bg-card/60 p-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_7rem_repeat(2,minmax(0,8.5rem))_minmax(0,10rem)_minmax(0,9rem)_auto]"
                     >
                       <input
                         value={taskTitle}
@@ -787,11 +791,19 @@ function Workspace() {
                       />
                       <input
                         type="date"
+                        value={taskStart || planDate}
+                        onChange={(e) => setTaskStart(e.target.value)}
+                        aria-label={t("projects.start")}
+                        title={t("projects.start")}
+                        className={`${field} w-full`}
+                      />
+                      <input
+                        type="date"
                         value={taskEnd}
-                        min={planDate}
+                        min={taskStart || planDate}
                         onChange={(e) => setTaskEnd(e.target.value)}
-                        aria-label={t("plan.until")}
-                        title={t("plan.until")}
+                        aria-label={t("projects.end")}
+                        title={t("projects.end")}
                         className={`${field} w-full`}
                       />
                       <select
