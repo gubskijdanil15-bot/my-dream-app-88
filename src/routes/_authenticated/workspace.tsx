@@ -774,7 +774,20 @@ function Workspace() {
                     <form
                       onSubmit={submitTask}
                       className="mb-6 grid gap-2 rounded-2xl border border-border bg-card/60 p-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_7rem_repeat(2,minmax(0,8.5rem))_minmax(0,10rem)_minmax(0,9rem)_auto]"
-...
+                      <input
+                        value={taskTitle}
+                        onChange={(e) => setTaskTitle(e.target.value)}
+                        placeholder={t("ws.addTask")}
+                        maxLength={200}
+                        className={`${field} w-full sm:col-span-2 lg:col-span-1`}
+                      />
+                      <input
+                        type="time"
+                        value={taskTime}
+                        onChange={(e) => setTaskTime(e.target.value)}
+                        aria-label={t("task.time")}
+                        className={`${field} w-full`}
+                      />
                       <input
                         type="date"
                         value={taskStart || planDate}
