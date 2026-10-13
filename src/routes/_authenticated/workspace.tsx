@@ -156,6 +156,7 @@ function Workspace() {
   const [taskTitle, setTaskTitle] = useState("");
   const [taskPriority, setTaskPriority] = useState<Task["priority"]>("medium");
   const [taskTime, setTaskTime] = useState("");
+  const [taskStart, setTaskStart] = useState("");
   const [taskEnd, setTaskEnd] = useState("");
   const [taskReminder, setTaskReminder] = useState<Reminder>("none");
   const [taskKr, setTaskKr] = useState("");
@@ -197,6 +198,7 @@ function Workspace() {
   function resetTaskForm() {
     setTaskTitle("");
     setTaskTime("");
+    setTaskStart("");
     setTaskEnd("");
     setTaskReminder("none");
     setTaskKr("");
