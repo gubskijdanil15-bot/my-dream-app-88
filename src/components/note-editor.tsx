@@ -248,6 +248,7 @@ export function NoteEditor({
           onText={(text) => {
             bodyRef.current?.focus();
             document.execCommand("insertText", false, text);
+            markDirty();
           }}
           onClose={() => setShowPad(false)}
         />
@@ -294,6 +295,8 @@ export function NoteEditor({
         contentEditable={canEdit}
         suppressContentEditableWarning
         data-placeholder={t("ws.writeItOut")}
+        onInput={markDirty}
+        onBlur={flush}
         className="rich-note min-h-48 w-full rounded-2xl border border-border bg-card p-4 text-base leading-relaxed focus:outline-none focus:ring-1 focus:ring-ring md:min-h-[22rem]"
       />
 
