@@ -579,7 +579,7 @@ function Workspace() {
                   onSave={(input) =>
                     updateNote.mutate(
                       { id: selected.id, ...input },
-                      { onSuccess: () => toast.success(t("ws.noteSaved")) },
+                      { onError: () => toast.error(t("ws.errNote")) },
                     )
                   }
                   onLinksChange={(links) => updateNote.mutate({ id: selected.id, links })}
