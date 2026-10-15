@@ -148,33 +148,33 @@ export function NoteEditor({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-end gap-4">
+        {canEdit && (
+          <span className="mr-auto text-[11px] text-muted-foreground">
+            {status === "saving" ? t("ws.saving") : status === "saved" ? t("ws.saved") : ""}
+          </span>
+        )}
         {!canEdit && (
           <span className="mr-auto rounded-full bg-muted px-3 py-1 text-[11px] text-muted-foreground">
             {t("share.readOnly")}
           </span>
         )}
         {canEdit && (
-          <>
-            <button
-              onClick={save}
-              disabled={saving}
-              className="text-xs font-semibold tracking-wide text-muted-foreground hover:text-accent disabled:opacity-50"
-            >
-              {t("ws.save")}
-            </button>
-            <button
-              onClick={onDelete}
-              className="text-xs font-semibold tracking-wide text-muted-foreground hover:text-destructive"
-            >
-              {t("ws.delete")}
-            </button>
-          </>
+          <button
+            onClick={onDelete}
+            className="text-xs font-semibold tracking-wide text-muted-foreground hover:text-destructive"
+          >
+            {t("ws.delete")}
+          </button>
         )}
       </div>
 
       <input
         value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        onChange={(e) => {
+          titleRef.current = e.target.value;
+          setTitle(e.target.value);
+          markDirty();
+        }}
         readOnly={!canEdit}
         maxLength={200}
         className="mb-4 w-full border-none bg-transparent text-lg font-bold tracking-tight focus:outline-none sm:text-xl"
