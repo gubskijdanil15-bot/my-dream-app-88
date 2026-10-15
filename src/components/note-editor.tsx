@@ -72,7 +72,16 @@ export function NoteEditor({
   const [title, setTitle] = useState(note.title);
   const [showColors, setShowColors] = useState(false);
   const [showPad, setShowPad] = useState(false);
+  const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
 
+  // Latest values for the debounced / unmount flushes.
+  const titleRef = useRef(note.title);
+  const canEditRef = useRef(canEdit);
+  const saveRef = useRef(onSave);
+  saveRef.current = onSave;
+  canEditRef.current = canEdit;
+  const pending = useRef(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load note content only when a different note is opened, so typing never
   // re-renders (and therefore never blurs) the editable area.
@@ -83,16 +92,54 @@ export function NoteEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note.id]);
 
+  function currentInput() {
+    const html = sanitizeNote(bodyRef.current?.innerHTML ?? "");
+    const plain = (bodyRef.current?.innerText ?? "").slice(0, 8000);
+    return { title: titleRef.current.trim() || "Untitled", body_html: html, body: plain };
+  }
+
+  function flush() {
+    if (!pending.current || !canEditRef.current) return;
+    pending.current = false;
+    setStatus("saving");
+    saveRef.current(currentInput());
+  }
+
+  // Auto-save: save a moment after typing stops.
+  function markDirty() {
+    if (!canEditRef.current) return;
+    pending.current = true;
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(flush, 1200);
+  }
+
+  // Flush any unsaved edits when the editor unmounts (switching notes/tabs).
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+      if (pending.current && canEditRef.current) saveRef.current(currentInput());
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  // Reflect the parent's mutation state in the little status label.
+  useEffect(() => {
+    if (saving) setStatus("saving");
+  }, [saving]);
+  useEffect(() => {
+    if (!saving && status === "saving") {
+      setStatus("saved");
+      const id = setTimeout(() => setStatus("idle"), 2000);
+      return () => clearTimeout(id);
+    }
+  }, [saving, status]);
+
   function exec(command: string, value?: string) {
     bodyRef.current?.focus();
     document.execCommand("styleWithCSS", false, "true");
     document.execCommand(command, false, value);
-  }
-
-  function save() {
-    const html = sanitizeNote(bodyRef.current?.innerHTML ?? "");
-    const plain = (bodyRef.current?.innerText ?? "").slice(0, 8000);
-    onSave({ title: title.trim() || "Untitled", body_html: html, body: plain });
+    markDirty();
   }
 
   const btn =
