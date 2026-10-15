@@ -72,7 +72,16 @@ export function NoteEditor({
   const [title, setTitle] = useState(note.title);
   const [showColors, setShowColors] = useState(false);
   const [showPad, setShowPad] = useState(false);
+  const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
 
+  // Latest values for the debounced / unmount flushes.
+  const titleRef = useRef(note.title);
+  const canEditRef = useRef(canEdit);
+  const saveRef = useRef(onSave);
+  saveRef.current = onSave;
+  canEditRef.current = canEdit;
+  const pending = useRef(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load note content only when a different note is opened, so typing never
   // re-renders (and therefore never blurs) the editable area.
@@ -83,16 +92,54 @@ export function NoteEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [note.id]);
 
+  function currentInput() {
+    const html = sanitizeNote(bodyRef.current?.innerHTML ?? "");
+    const plain = (bodyRef.current?.innerText ?? "").slice(0, 8000);
+    return { title: titleRef.current.trim() || "Untitled", body_html: html, body: plain };
+  }
+
+  function flush() {
+    if (!pending.current || !canEditRef.current) return;
+    pending.current = false;
+    setStatus("saving");
+    saveRef.current(currentInput());
+  }
+
+  // Auto-save: save a moment after typing stops.
+  function markDirty() {
+    if (!canEditRef.current) return;
+    pending.current = true;
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(flush, 1200);
+  }
+
+  // Flush any unsaved edits when the editor unmounts (switching notes/tabs).
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+      if (pending.current && canEditRef.current) saveRef.current(currentInput());
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  // Reflect the parent's mutation state in the little status label.
+  useEffect(() => {
+    if (saving) setStatus("saving");
+  }, [saving]);
+  useEffect(() => {
+    if (!saving && status === "saving") {
+      setStatus("saved");
+      const id = setTimeout(() => setStatus("idle"), 2000);
+      return () => clearTimeout(id);
+    }
+  }, [saving, status]);
+
   function exec(command: string, value?: string) {
     bodyRef.current?.focus();
     document.execCommand("styleWithCSS", false, "true");
     document.execCommand(command, false, value);
-  }
-
-  function save() {
-    const html = sanitizeNote(bodyRef.current?.innerHTML ?? "");
-    const plain = (bodyRef.current?.innerText ?? "").slice(0, 8000);
-    onSave({ title: title.trim() || "Untitled", body_html: html, body: plain });
+    markDirty();
   }
 
   const btn =
@@ -101,33 +148,33 @@ export function NoteEditor({
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-end gap-4">
+        {canEdit && (
+          <span className="mr-auto text-[11px] text-muted-foreground">
+            {status === "saving" ? t("ws.saving") : status === "saved" ? t("ws.saved") : ""}
+          </span>
+        )}
         {!canEdit && (
           <span className="mr-auto rounded-full bg-muted px-3 py-1 text-[11px] text-muted-foreground">
             {t("share.readOnly")}
           </span>
         )}
         {canEdit && (
-          <>
-            <button
-              onClick={save}
-              disabled={saving}
-              className="text-xs font-semibold tracking-wide text-muted-foreground hover:text-accent disabled:opacity-50"
-            >
-              {t("ws.save")}
-            </button>
-            <button
-              onClick={onDelete}
-              className="text-xs font-semibold tracking-wide text-muted-foreground hover:text-destructive"
-            >
-              {t("ws.delete")}
-            </button>
-          </>
+          <button
+            onClick={onDelete}
+            className="text-xs font-semibold tracking-wide text-muted-foreground hover:text-destructive"
+          >
+            {t("ws.delete")}
+          </button>
         )}
       </div>
 
       <input
         value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        onChange={(e) => {
+          titleRef.current = e.target.value;
+          setTitle(e.target.value);
+          markDirty();
+        }}
         readOnly={!canEdit}
         maxLength={200}
         className="mb-4 w-full border-none bg-transparent text-lg font-bold tracking-tight focus:outline-none sm:text-xl"
@@ -201,6 +248,7 @@ export function NoteEditor({
           onText={(text) => {
             bodyRef.current?.focus();
             document.execCommand("insertText", false, text);
+            markDirty();
           }}
           onClose={() => setShowPad(false)}
         />
@@ -247,6 +295,8 @@ export function NoteEditor({
         contentEditable={canEdit}
         suppressContentEditableWarning
         data-placeholder={t("ws.writeItOut")}
+        onInput={markDirty}
+        onBlur={flush}
         className="rich-note min-h-48 w-full rounded-2xl border border-border bg-card p-4 text-base leading-relaxed focus:outline-none focus:ring-1 focus:ring-ring md:min-h-[22rem]"
       />
 
