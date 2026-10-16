@@ -1,0 +1,1 @@
+ALTER TABLE public.boards ADD COLUMN date_mode text NOT NULL DEFAULT 'range' CHECK (date_mode IN ('range', 'days')), ADD COLUMN specific_dates date[] NOT NULL DEFAULT '{}';

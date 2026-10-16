@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useLang } from "@/lib/i18n";
 import { useGoals, useObjectives, useTasksRange, type Task } from "@/lib/workspace-data";
 import { useBoards } from "@/lib/boards-data";
+import { projectCalendarDates } from "@/lib/project-dates";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const iso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -60,11 +61,12 @@ export function ContentCalendar({ ownerId, onOpenMilestone }: Props) {
       if (o.target_date) push({ id: o.id, title: o.title, kind: "okr", date: o.target_date });
     }
     for (const p of projects.data ?? []) {
-      if (p.start_date) push({ id: p.id, title: p.name, kind: "project", date: p.start_date });
-      if (p.end_date && p.end_date !== p.start_date) push({ id: p.id, title: p.name, kind: "project", date: p.end_date });
+      for (const date of projectCalendarDates(p, iso(start), iso(end))) {
+        push({ id: p.id, title: p.name, kind: "project", date });
+      }
     }
     return map;
-  }, [goals.data, objectives.data, projects.data]);
+  }, [goals.data, objectives.data, projects.data, cursor]);
 
   const leading = (start.getDay() + 6) % 7; // Monday-first
   const cells = [
@@ -139,9 +141,6 @@ export function ContentCalendar({ ownerId, onOpenMilestone }: Props) {
       <div className="mb-4 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <span className="size-2 rounded-full bg-accent" /> {t("ws.tabPlan")}
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="size-2 rounded-full bg-emerald-500" /> {t("cal.goal")}
         </span>
         <span className="flex items-center gap-1.5">
           <span className="size-2 rounded-full bg-sky-500" /> {t("cal.okr")}

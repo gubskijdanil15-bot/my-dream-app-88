@@ -11,3 +11,4 @@
 
 - Projects reuse the existing boards, columns and cards with additive detail/lifecycle fields to preserve content and journal-sharing permissions.
 - Project completion filtering and timestamp transitions live in a pure module with lifecycle tests so completed lists remain predictable.
+- Project schedule expansion and date-list updates live in a pure tested module; the calendar reads only the selected scheduling mode while retaining the other mode's dates for switching back.

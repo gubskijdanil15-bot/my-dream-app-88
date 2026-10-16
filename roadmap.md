@@ -1,5 +1,10 @@
 # Paperweight roadmap
 
+## Project scheduling
+- [x] Switch between date ranges and individual days; add/remove dates
+- [x] Sync project dates with the calendar and remove the Goals legend icon
+- [x] Verify saved dates and calendar updates
+
 ## Projects update
 - [x] Replace Boards labels with Projects; preserve existing content
 - [x] Completed projects list and editable script, DISPO, locations and production notes

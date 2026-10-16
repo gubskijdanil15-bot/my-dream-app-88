@@ -15,6 +15,8 @@ export type Board = {
   completed_at: string | null;
   start_date: string | null;
   end_date: string | null;
+  date_mode: "range" | "days";
+  specific_dates: string[];
 };
 
 export type BoardColumn = {
@@ -46,12 +48,12 @@ export function useBoards(ownerId?: string) {
       const owner = await ownerOrSelf(ownerId);
       const { data, error } = await supabase
         .from("boards")
-        .select("id, name, description, position, status, script, dispo, locations, production_notes, completed_at, start_date, end_date")
+        .select("id, name, description, position, status, script, dispo, locations, production_notes, completed_at, start_date, end_date, date_mode, specific_dates")
         .eq("user_id", owner)
         .order("position", { ascending: true })
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return (data ?? []).map((row) => ({ ...row, status: row.status === "completed" ? "completed" : "active" }));
+      return (data ?? []).map((row) => ({ ...row, status: row.status === "completed" ? "completed" : "active", date_mode: row.date_mode === "days" ? "days" : "range" }));
     },
   });
 }
