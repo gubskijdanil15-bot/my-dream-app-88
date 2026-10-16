@@ -137,6 +137,7 @@ export type Database = {
         Row: {
           completed_at: string | null
           created_at: string
+          date_mode: string
           description: string | null
           dispo: string | null
           end_date: string | null
@@ -146,6 +147,7 @@ export type Database = {
           position: number
           production_notes: string | null
           script: string | null
+          specific_dates: string[]
           start_date: string | null
           status: string
           updated_at: string
@@ -154,6 +156,7 @@ export type Database = {
         Insert: {
           completed_at?: string | null
           created_at?: string
+          date_mode?: string
           description?: string | null
           dispo?: string | null
           end_date?: string | null
@@ -163,6 +166,7 @@ export type Database = {
           position?: number
           production_notes?: string | null
           script?: string | null
+          specific_dates?: string[]
           start_date?: string | null
           status?: string
           updated_at?: string
@@ -171,6 +175,7 @@ export type Database = {
         Update: {
           completed_at?: string | null
           created_at?: string
+          date_mode?: string
           description?: string | null
           dispo?: string | null
           end_date?: string | null
@@ -180,6 +185,7 @@ export type Database = {
           position?: number
           production_notes?: string | null
           script?: string | null
+          specific_dates?: string[]
           start_date?: string | null
           status?: string
           updated_at?: string
